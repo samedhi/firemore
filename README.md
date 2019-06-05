@@ -18,23 +18,11 @@ Main features include:
 
 # <a id="getting_started"></a>Getting Started
 
+To use firemore in an existing project, simply add this to your dependencies in project.clj ([lein](https://github.com/technomancy/leiningen)) or build.boot ([boot](https://github.com/boot-clj/boot)).
+
+!!!!! [firemore "x.y.z"] @clojars !!!!!!
+
 # <a id="usage"></a>Usage
-
-# <a id="api"></a>API
-
-# <a id="contributing"></a>Contributing
-
-# <a id="credits"></a>Credits
-
-[Stephen Cagle](https://www.linkedin.com/in/stephen-cagle-92b895102/) is a Senior Software Engineer at [Dividend Finance](https://www.dividendfinance.com/) in San Francisco, CA. He is the original (currently only, but always accepting PRs!) creator/maintainer of firemore.
-
-![Man (Stephen Cagle) holding beer & small dog (Chihuahua)](asset/img/stephen_and_nugget.jpg)
-
-# <a id="License"></a>License
-
-MIT License
-
-Copyright (c) 2019 Stephen Cagle
 
 1. (firemore/hydrate channel-map) -> atom that will update with the most recent state of all channels, great for use in om/reagent/quiescent/re-frame. atom will contain the following metadata.
     1. :clear - (fn []) -> (update {}) - Sets the channel-map to be the empty map.
@@ -50,25 +38,46 @@ Copyright (c) 2019 Stephen Cagle
     1. `:firestore/deleted` to indicate that the entity was deleted from the `<firestore_db>`.
     1. Close the channel to stop listening at that path.
 
+
+    ```
+    {:user [:user <my-user-id>]
+     :favorites
+       {:movie [:movie :interstellar]
+        :food [:food :pizza]}
+     :friends [:user <my-user-id> :friends]}
+
+    =>
+
+    {:user {:path [:user <my-user-id>]
+            :first "Stephen"
+            :last "Cagle"}
+     :favorites
+     {:movie {:path [:movie :interstellar]
+              :title "Interstellar"}
+      :food {:path [:food :pizza]
+             :ingredients [:cheese :sauce :dough]}}
+     :friends [<user-id-1> <user-id-2> <user-id-3>]}
+    ```
+
 # <a id="api"></a>API
 
+# <a id="contributing"></a>Contributing
 
-```
-{:user [:user <my-user-id>]
- :favorites
-   {:movie [:movie :interstellar]
-    :food [:food :pizza]}
- :friends [:user <my-user-id> :friends]}
+Pull Request are always welcome and appreciated. If you want to discuss firemore, I am available most readily:
+1. On [clojurians.slack.com under #firemore](https://clojurians.slack.com/messages/C073DKH9P/).
+1. Through the [issue tracking system](https://github.com/samedhi/firemore/issues).
+1. By email at stephen@read-line.com .
 
-=>
+# <a id="credits"></a>Credits
 
-{:user {:path [:user <my-user-id>]
-        :first "Stephen"
-        :last "Cagle"}
- :favorites
- {:movie {:path [:movie :interstellar]
-          :title "Interstellar"}
-  :food {:path [:food :pizza]
-         :ingredients [:cheese :sauce :dough]}}
- :friends [<user-id-1> <user-id-2> <user-id-3>]}
-```
+[Stephen Cagle](https://samedhi.github.io/) is a Senior Software Engineer at [Dividend Finance](https://www.dividendfinance.com/) in San Francisco, CA. He is the original (currently only, but always accepting PRs!) creator/maintainer of firemore.
+[@github](https://github.com/samedhi)
+[@linkedin](https://www.linkedin.com/in/stephen-cagle-92b895102/)
+
+![Man (Stephen Cagle) holding beer & small dog (Chihuahua)](asset/img/stephen_and_nugget.jpg)
+
+# <a id="License"></a>License
+
+MIT License
+
+Copyright (c) 2019 Stephen Cagle
