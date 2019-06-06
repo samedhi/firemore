@@ -6,7 +6,8 @@ Main features include:
 1. A direct API to the [Firestore Database](https://firebase.google.com/docs/firestore).
 1. Automatic (and customizable) conversions between clojure maps and Firestore "json" documents.
 1. A channels based API for getting and observing Firestore documents.
-1. A binding between the Firestore Cloud database and a local clojure atom.
+1. A binding between the Firestore Cloud database and a local clojure atom (great for om/re-frame/reagent).
+1. Simply update the document in the atom effect the change in the
 
 # Table of Contents
 1. [Getting Started](#getting_started)
@@ -23,6 +24,99 @@ To use firemore in an existing project, simply add this to your dependencies in 
 !!!!! [firemore "x.y.z"] @clojars !!!!!!
 
 # <a id="usage"></a>Usage
+
+;; TODO: Transparently convert arrays to Sets and back. Auto index for containment?
+
+;; TODO: Transparently convert keywords to strings and back? Maybe write some checksum at front of keyword?
+
+;; TODO: How exactly are you handling watching a collection? Return chan of chans?
+
+;; TODO: Add in metadata whether value you see if realized or not.
+
+## Refer to Firestore Locations
+
+```
+Usage:
+(ref collection)
+(ref collection document-id)
+(ref collection-1 document-id collection-2)
+(ref collection-1 document-id-1 collection-2 document-id-2)
+(ref collection-1 document-id-1 collection-2 document-id-2 & more)
+
+Returns a reference to a location in the Firestore database. Has no effect on
+the database. Document does not need to exist at the referenced location. Note
+that both collections can be either keywords or strings. document-ids must be
+strings.
+
+See: https://firebase.google.com/docs/firestore/data-model to understand the
+difference between collections and document-ids.
+```
+
+```
+Usage:
+(unique reference)
+
+Returns a new reference with a unique document-id. Throws an exception if
+reference argument does not refer to a collection.
+```
+
+## Read from Firestore
+
+```
+Usage:
+(get reference)
+
+Returns a channel. If a document exist at reference, it will be put! upon the
+channel. If no document exist at reference, then :firemore/no-document will be
+put! on the channel. The channel will then be closed.
+
+Note:
+put! ->  clojure.core.async/put!
+```
+
+```
+Usage:
+(watch reference)
+
+Returns a channel. If a document exist at reference, it will be put! upon
+the channel. If no document exist at reference, then :firemore/no-document will
+be put! on the channel. As the document at reference is updated through
+time, the channel will put! the newest value of the document (if it exist)
+ or :firemore/no-document (if it does not) upon the channel.
+
+Important: close! the channel to clean up the state machine feeding this
+channel. Failure to close the channel will result in a memory leak.
+
+Note:
+put! ->  clojure.core.async/put!
+close! ->  clojure.core.async/close!
+```
+
+## Write to Firestore
+
+```
+Usage:
+(write! reference m)
+
+Returns a channel. Overwrites the document at reference with m.  Iff an error
+occurs when writing m to Firestore, then the error will be put! upon the
+channel. The channel will then be closed.
+
+Note:
+put! ->  clojure.core.async/put!
+```
+
+```
+Usage:
+(merge! reference m)
+
+Returns a channel. Updates (merges in novelty) the document at reference with m.
+Iff an error occurs when writing m to Firestore, then the error will be put!
+upon the channel. The channel will then be closed.
+
+Note:
+put! ->  clojure.core.async/put!
+```
 
 1. (firemore/hydrate channel-map) -> atom that will update with the most recent state of all channels, great for use in om/reagent/quiescent/re-frame. atom will contain the following metadata.
     1. :clear - (fn []) -> (update {}) - Sets the channel-map to be the empty map.
