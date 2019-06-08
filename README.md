@@ -33,6 +33,43 @@ To use firemore in an existing project, simply add this to your dependencies in 
 
 ;; TODO: Add in metadata whether value you see if realized or not.
 
+## Authentication
+
+```
+Usage:
+(get-user-atom)
+
+Returns a atom containing either a user-map or nil. Atom will contain nil when
+no user is logged into Firestore. Atom will contain a user-map if a user is
+currently logged in. user-map has the following form:
+
+{:id <a_application_unique_id>
+ :email <user_email_address>
+ :name <user_identifier>
+ :photo <url_to_a_photo_for_this_user>}
+
+Note: :id will always be present. :email, :name, :photo may be present depending
+on sign-in provider and/or whether you have set their values.
+```
+
+```
+Usage:
+(delete-user userid)
+
+Deletes the user specified by userid from Firestore. This removes all sign-in
+providers for this user, as well as deleting the data in the user information
+map returned by (get-user-atom). Note that this does NOT delete information
+relating to the user at userid from Firestore.
+```
+
+```
+Usage:
+(logout)
+
+Log out the currently logged in user (if any).
+```
+
+
 ## Refer to Firestore Locations
 
 ```
@@ -45,7 +82,7 @@ Usage:
 
 Returns a reference to a location in the Firestore database. Has no effect on
 the database. Document does not need to exist at the referenced location. Note
-that both collections can be either keywords or strings. document-ids must be
+that collections can be either keywords or strings. document-ids must be
 strings.
 
 See: https://firebase.google.com/docs/firestore/data-model to understand the
