@@ -29,11 +29,28 @@ To use firemore in an existing project, simply add this to your dependencies in 
 
 ;; TODO: Transparently convert keywords to strings and back? Maybe write some checksum at front of keyword?
 
-;; TODO: How exactly are you handling watching a collection? Return chan of chans?
-
 ;; TODO: Add in metadata whether value you see if realized or not.
 
+The following is a walkthrough of the main features of firemore.
+
 ## Authentication
+Most apps require some way of authenticating a user.
+Firestore includes a fairly robust [Authentication System](https://firebase.google.com/docs/auth).
+Use of the built in authentication system will allow you to complete your project
+more quickly and securely than rolling your own solutions.
+
+```clojurescript
+(def user-atm (get-user-atom))
+
+;; The value within user-atm is currently nil as you are not logged in.
+(assert (= nil @user-atm))
+
+;; Let's log you in as the anonymous user
+(login-as-anonymous)
+
+;; having done that, let's check what user-atm looks like now
+@user-atm
+```
 
 ```
 Usage:
@@ -43,23 +60,34 @@ Returns a atom containing either a user-map or nil. Atom will contain nil when
 no user is logged into Firestore. Atom will contain a user-map if a user is
 currently logged in. user-map has the following form:
 
-{:id <a_application_unique_id>
+{:uid <application_unique_id>
  :email <user_email_address>
  :name <user_identifier>
  :photo <url_to_a_photo_for_this_user>}
 
-Note: :id will always be present. :email, :name, :photo may be present depending
+Note: :uid will always be present. :email, :name, :photo may be present depending
 on sign-in provider and/or whether you have set their values.
 ```
 
 ```
 Usage:
-(delete-user userid)
+(login-as-anonymous)
 
-Deletes the user specified by userid from Firestore. This removes all sign-in
-providers for this user, as well as deleting the data in the user information
-map returned by (get-user-atom). Note that this does NOT delete information
-relating to the user at userid from Firestore.
+Log out any existing user, then log in a new anonymous user.
+```
+
+You have been logged in as a anonymous user. Anonymous does NOT mean
+unidentified (you have a unique user id in `:uid`). Anonymous does however mean that
+we don't know your `:email`, `:name`, or `:photo`. Anonymous means that if you
+were to logout from this account or loose access to this system, there would be
+no way for you to log back in as this anonymous user (though you could always
+login as a new anonymous user).
+
+```clojurescript
+;; Of course, you can also logout, let's demonstrate this.
+(println "user-atm -> " @user-atm)
+(logout)
+(println "user-atm ->" @user-atm)
 ```
 
 ```
@@ -69,6 +97,40 @@ Usage:
 Log out the currently logged in user (if any).
 ```
 
+Let's demonstrate logging in and out a few times. Note that your `:uid` changes
+every time you login again with a new anonymous user.
+
+```clojurescript
+(login-as-anonymous)
+(println "id ->" @user-atm)
+
+(login-as-anonymous)
+(println "id ->" @user-atm)
+
+(login-as-anonymous)
+(println "id ->" @user-atm)
+```
+
+```clojurescript
+;; Most applications will also need to allow users to delete their accounts.
+;; This is trivial in Firestore.
+
+(login-as-anonymous)
+(println "Check that we have a user ->" @user-atm)
+
+(logout)
+(println "We have been logged out as our user is deleted ->" @user-atm)
+```
+
+```
+Usage:
+(delete-user)
+
+Deletes the user specified by user-id from Firestore. This removes all sign-in
+providers for this user, as well as deleting the data in the user information
+map returned by (get-user-atom). Note that this does NOT delete information
+relating to the user from Firestore.
+```
 
 ## Refer to Firestore Locations
 
@@ -155,40 +217,60 @@ Note:
 put! ->  clojure.core.async/put!
 ```
 
-1. (firemore/hydrate channel-map) -> atom that will update with the most recent state of all channels, great for use in om/reagent/quiescent/re-frame. atom will contain the following metadata.
-    1. :clear - (fn []) -> (update {}) - Sets the channel-map to be the empty map.
-    2. :update - (fn [new-channel-map] ...) Takes a new channel map that is now the map that will now be the updated channel map.2
-1. A hydrated atom with no channels being observed in channel-map has no running go machine. Otherwise there is a go-machine that observes changes. For this reason you should :clear the channel map before releasing your reference to it to avoid a memory leak.
-1. Use clojure 'read' functions (`get`, `get-in`, keyword lookup) to read the derefed atom.
-1. Use clojure 'write' functions (`assoc`, `assoc-in`, `update-in`, et all) with `swap!` to update the atom. Changes to the atom are automatically persisted to the Firestore Cloud Database.
-    1. Changes to the atom will synchronously assume that the write will succeed and update immediately. The atom will later revert the write if the Firestore Cloud Database rejects the write.
-    1. Use `(transactional! atm ...)` to write a transaction to Firestore. This will return a channel with either the new state of the atom or a failure.
+## Clojure Interop
 
-    1. (firemore/get :cities :austin) -> chan to retrieve the `<firestore_db>/cities/austin` document.
-    1. (firemore/watch :cities :austin) -> chan to get and then watch `<firestore_db>/cities/austin` for updates.
-    1. `:firestore/deleted` to indicate that the entity was deleted from the `<firestore_db>`.
-    1. Close the channel to stop listening at that path.
+```
+Usage:
+(fire->clj js-object)
+(fire->clj js-object opts)
 
+Returns the clojure form of the js-object document. You can override
+any of the behavior by specifying the opts argument.
+```
 
-    ```
-    {:user [:user <my-user-id>]
-     :favorites
-       {:movie [:movie :interstellar]
-        :food [:food :pizza]}
-     :friends [:user <my-user-id> :friends]}
+```
+(clj->fire document)
+(clj->fire document options)
 
-    =>
+Returns a javascript object that can be passed to Firestore for writes. opts
+allows you to modify the conversion.
+```
 
-    {:user {:path [:user <my-user-id>]
-            :first "Stephen"
-            :last "Cagle"}
-     :favorites
-     {:movie {:path [:movie :interstellar]
-              :title "Interstellar"}
-      :food {:path [:food :pizza]
-             :ingredients [:cheese :sauce :dough]}}
-     :friends [<user-id-1> <user-id-2> <user-id-3>]}
-    ```
+## Build Local State Atom
+
+:firemore/path to indicate that this is a path that should hydrate at this Locations
+can shortcut by just providing a path (a vector).
+
+What about the notion of unifying the local path and the firestore path with a keyword? No keyword
+or unfound keyword means just use the local-path for firestore... Maybe dumb actually.
+
+documents paths just become maps with the additional key of :firemore/path in their metadata
+
+collections become maps of maps with the key being the id of the item. The collection itself
+will have the collection path in :firemore/path. Similarily, each document with have the
+document path in firemore-path.
+
+```
+Usage:
+(hydrate structure-map)
+(hydrate atm structure-map)
+
+Returns a atom that will be built and updated from the supplied Firestore
+references. 2 argument version can be used to update an existing atom to
+the new structured-map.
+
+Important: Close with (-> <returned_atom> deref meta :close (apply [])). Failure
+to close the event machine that updates this atom will result in a memory leak.
+```
+
+```
+Usage:
+(realize-collection chan)
+
+Returns a atom containing a map. chan is a channel that sequences a collection
+of documents. As the chan has documents marked as being added, updated, and
+deleted, they will be correspondingly updated in the realized atom.
+```
 
 # <a id="api"></a>API
 
