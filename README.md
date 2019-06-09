@@ -166,6 +166,40 @@ collection.
 
 ## Read from Firestore
 
+The map to your right shows the data currently in your section of the firestore
+database. I have taken the liberty of setting you up with some starting data so
+that we can practice reading it using firemore.
+
+```clojurescript
+(def user-atm (get-user-atom))
+
+;; Well now just not sure. If everything else is using channels then seems easier
+;; to just use channels. But then it means you have to call (get-user) if you
+;; want the latest current user. Channels are always a delayed value, while
+;; atoms are more "up to date" (is this true?).
+
+Probably channels is best.
+
+(go
+  )
+(def user-id (<! (:uid @user-atm)))
+
+;; Is Luke Skywalker a force user? I can never remember? Let's check!
+(def luke (<! (get [:users user-id :characters "luke"])))
+
+(println "luke ->" luke)
+
+(:force-user? luke)
+```
+
+That's right, he does have force powers! Couldn't remember.
+
+A firemore document is a regular [clojure map](https://clojure.org/reference/data_structures#Maps).
+
+Note that the reference (vector) begins with `[:users user-id]`. This is because
+I have set up security rules so that you can only read and write to a location
+under `users/<user-id>` in the Firestore database.
+
 ```
 Usage:
 (get reference)
@@ -176,6 +210,33 @@ put! on the channel. The channel will then be closed.
 
 Note:
 put! ->  clojure.core.async/put!
+```
+
+```clojurescript
+(def luke-reference [:users user-id :characters "luke"])
+
+;; Rather than getting Luke once, let's watch him for all time.
+(def luke-chan (watch luke-reference))
+
+(go-loop [i 1]
+  (when-let [luke (<! luke-chan)]
+    (println i "luke ->" luke)
+    (recur (inc i))))
+
+(async/go
+  (println "Adding in Luke's initial occupation...")
+  (<! (write! luke-reference (assoc luke :occupation "farmboy")))
+  (<! (timeout 1000))
+
+  (println "Changing Luke's adult occupation...")
+  (<! (write! luke-reference (assoc luke :occupation "jedi")))
+  (<! (timeout 1000))
+
+  (println "Changing to Lukes final occupation after episode 7")
+  (<! (write! luke-reference (assoc luke :occupation "Becoming one with the Force")))
+  (<! (timeout 1000))
+
+  (close! luke-chan))
 ```
 
 ```
