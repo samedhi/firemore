@@ -51,7 +51,6 @@ more quickly and securely than rolling your own solutions.
 ;; having done that, let's check what user-atm looks like now
 (println "(1) user-atm contains -> " @user-atm)
 
-```clojurescript
 ;; Let's demonstrate logging in and out a few times. Note that your `:uid`
 ;; changes every time you login again with a new anonymous user.
 (login-as-anonymous)
@@ -59,9 +58,6 @@ more quickly and securely than rolling your own solutions.
 
 (login-as-anonymous)
 (println "(3) user-atm contains ->" @user-atm)
-
-(login-as-anonymous)
-(println "(4) user-atm contains ->" @user-atm)
 ```
 
 ```
@@ -158,7 +154,7 @@ Note that keywords and strings are interchangeable. I prefer to use keywords
 in collection (odd) positions and strings in (even) positions, but it is up to
 you.
 
-Note that any vector that is of even length must be a reference to a
+Note that a vector of even length must be a reference to a
 document, while a vector of odd length must be a reference to a collection. So
 `[:users]` is a reference to the `users` collection. While
 `[:users "alovelace"]` is a reference to a document *within* the `users`
@@ -173,19 +169,22 @@ that we can practice reading it using firemore.
 ```clojurescript
 (def user-atm (get-user-atom))
 
-;; Well now just not sure. If everything else is using channels then seems easier
-;; to just use channels. But then it means you have to call (get-user) if you
-;; want the latest current user. Channels are always a delayed value, while
-;; atoms are more "up to date" (is this true?).
+(def user-id (:uid @user-atm))
 
-Probably channels is best.
+(def luke-reference [:users user-id :characters "luke"])
+```
 
-(go
-  )
-(def user-id (<! (:uid @user-atm)))
+Note that the reference (vector) begins with `[:users user-id]`. This is because
+I have set up [security rules](https://firebase.google.com/docs/firestore/security/get-started)
+so you and only you may read and write to a location
+under `users/<user-id>` in the Firestore database. This is necessary because
+this database is being used by everyone currently looking at this document. The
+security rule allows me to carve out a little place in the database for you to
+work within without conflicting with others.
 
-;; Is Luke Skywalker a force user? I can never remember? Let's check!
-(def luke (<! (get [:users user-id :characters "luke"])))
+Is Luke Skywalker a force user? I can never remember? Let's check!
+```clojurescript
+(def luke (<! (get luke-reference)))
 
 (println "luke ->" luke)
 
@@ -195,10 +194,8 @@ Probably channels is best.
 That's right, he does have force powers! Couldn't remember.
 
 A firemore document is a regular [clojure map](https://clojure.org/reference/data_structures#Maps).
-
-Note that the reference (vector) begins with `[:users user-id]`. This is because
-I have set up security rules so that you can only read and write to a location
-under `users/<user-id>` in the Firestore database.
+There is a fair amount of conversion to allow for conversion between a Firestore
+document and a firemore document (see [Clojure Interop](#clojure_interop) for details).
 
 ```
 Usage:
@@ -212,32 +209,47 @@ Note:
 put! ->  clojure.core.async/put!
 ```
 
-```clojurescript
-(def luke-reference [:users user-id :characters "luke"])
+But what if I want to watch Luke change over time? I could periodically check for
+updates; this is error prone, verbose, and inefficient. Rather than getting
+Luke once, let's watch him from now on.
 
-;; Rather than getting Luke once, let's watch him for all time.
+```clojurescript
 (def luke-chan (watch luke-reference))
 
-(go-loop [i 1]
+(def luke-atm (atom nil)
+
+(go-loop [i 2]
   (when-let [luke (<! luke-chan)]
     (println i "luke ->" luke)
+    (reset! luke-atm luke)
     (recur (inc i))))
 
+TODO: Stupid, make this thread safe
+
 (async/go
-  (println "Adding in Luke's initial occupation...")
-  (<! (write! luke-reference (assoc luke :occupation "farmboy")))
-  (<! (timeout 1000))
+  (let [luke (<! c)]
 
-  (println "Changing Luke's adult occupation...")
-  (<! (write! luke-reference (assoc luke :occupation "jedi")))
-  (<! (timeout 1000))
+    (println "Adding in Luke's initial occupation...")
+    (<! (write! luke-reference (assoc luke :occupation "farmboy")))
+    (<! (timeout 1000))
 
-  (println "Changing to Lukes final occupation after episode 7")
-  (<! (write! luke-reference (assoc luke :occupation "Becoming one with the Force")))
-  (<! (timeout 1000))
+    (println "Changing Luke's adult occupation...")
+    (<! (write! luke-reference (assoc luke :occupation "jedi")))
+    (<! (timeout 1000))
 
-  (close! luke-chan))
+    (println "Changing to Lukes final occupation after episode 7")
+    (<! (write! luke-reference (assoc luke :occupation "One with the Force")))
+    (<! (timeout 1000))
+
+    ;; Remember to close the channel when you are done with it!
+    ;; (Stop watching Luke)
+    (close! luke-chan)))
 ```
+
+I put small pauses of 1 second between each change to Luke so that we can
+observe the go-loop println firing. Notice that Luke 1 is the initial value of
+of luke-reference in the database. Luke 2, 3, and 4 reflect the three separate
+changes made to the Luke document.
 
 ```
 Usage:
@@ -247,7 +259,7 @@ Returns a channel. If a document exist at reference, it will be put! upon
 the channel. If no document exist at reference, then :firemore/no-document will
 be put! on the channel. As the document at reference is updated through
 time, the channel will put! the newest value of the document (if it exist)
- or :firemore/no-document (if it does not) upon the channel.
+or :firemore/no-document (if it does not) upon the channel.
 
 Important: close! the channel to clean up the state machine feeding this
 channel. Failure to close the channel will result in a memory leak.
@@ -283,7 +295,9 @@ Note:
 put! ->  clojure.core.async/put!
 ```
 
-## Clojure Interop
+TODO: Delete
+
+## <a id="clojure_interop"></a> Clojure Interop
 
 ```
 Usage:
