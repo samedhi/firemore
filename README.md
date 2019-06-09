@@ -49,7 +49,19 @@ more quickly and securely than rolling your own solutions.
 (login-as-anonymous)
 
 ;; having done that, let's check what user-atm looks like now
-@user-atm
+(println "(1) user-atm contains -> " @user-atm)
+
+```clojurescript
+;; Let's demonstrate logging in and out a few times. Note that your `:uid`
+;; changes every time you login again with a new anonymous user.
+(login-as-anonymous)
+(println "(2) user-atm contains ->" @user-atm)
+
+(login-as-anonymous)
+(println "(3) user-atm contains ->" @user-atm)
+
+(login-as-anonymous)
+(println "(4) user-atm contains ->" @user-atm)
 ```
 
 ```
@@ -85,9 +97,11 @@ login as a new anonymous user).
 
 ```clojurescript
 ;; Of course, you can also logout, let's demonstrate this.
-(println "user-atm -> " @user-atm)
+
+(println "(1) user-atm -> " @user-atm)
+
 (logout)
-(println "user-atm ->" @user-atm)
+(println "(2) user-atm ->" @user-atm)
 ```
 
 ```
@@ -97,20 +111,6 @@ Usage:
 Log out the currently logged in user (if any).
 ```
 
-Let's demonstrate logging in and out a few times. Note that your `:uid` changes
-every time you login again with a new anonymous user.
-
-```clojurescript
-(login-as-anonymous)
-(println "id ->" @user-atm)
-
-(login-as-anonymous)
-(println "id ->" @user-atm)
-
-(login-as-anonymous)
-(println "id ->" @user-atm)
-```
-
 ```clojurescript
 ;; Most applications will also need to allow users to delete their accounts.
 ;; This is trivial in Firestore.
@@ -118,7 +118,7 @@ every time you login again with a new anonymous user.
 (login-as-anonymous)
 (println "Check that we have a user ->" @user-atm)
 
-(logout)
+(delete-user)
 (println "We have been logged out as our user is deleted ->" @user-atm)
 ```
 
@@ -129,35 +129,40 @@ Usage:
 Deletes the user specified by user-id from Firestore. This removes all sign-in
 providers for this user, as well as deleting the data in the user information
 map returned by (get-user-atom). Note that this does NOT delete information
-relating to the user from Firestore.
+relating to the user from the actual Firestore database.
 ```
 
-## Refer to Firestore Locations
+## References
 
+Read the documentation on [documents, collections,
+and references](https://firebase.google.com/docs/firestore/data-model) (just
+the linked page). Go ahead. I'll wait.
+
+As you just read, a Firestore reference is a opaque javascript object with a
+bunch of functions attached to it. In firemore a reference is a vector of
+keywords or strings with length at least 1.
+
+So, the following document reference in firestore
 ```
-Usage:
-(ref collection)
-(ref collection document-id)
-(ref collection-1 document-id collection-2)
-(ref collection-1 document-id-1 collection-2 document-id-2)
-(ref collection-1 document-id-1 collection-2 document-id-2 & more)
-
-Returns a reference to a location in the Firestore database. Has no effect on
-the database. Document does not need to exist at the referenced location. Note
-that collections can be either keywords or strings. document-ids must be
-strings.
-
-See: https://firebase.google.com/docs/firestore/data-model to understand the
-difference between collections and document-ids.
+db.collection('users').doc('alovelace');
+```
+Becomes this in firemore:
+```
+["users" "alovelace"] ;; OR
+[:users "alovelace"]  ;; OR
+["users" :alovelace]  ;; OR
+[:users :alovelace]
 ```
 
-```
-Usage:
-(unique reference)
+Note that keywords and strings are interchangeable. I prefer to use keywords
+in collection (odd) positions and strings in (even) positions, but it is up to
+you.
 
-Returns a new reference with a unique document-id. Throws an exception if
-reference argument does not refer to a collection.
-```
+Note that any vector that is of even length must be a reference to a
+document, while a vector of odd length must be a reference to a collection. So
+`[:users]` is a reference to the `users` collection. While
+`[:users "alovelace"]` is a reference to a document *within* the `users`
+collection.
 
 ## Read from Firestore
 
@@ -224,8 +229,8 @@ Usage:
 (fire->clj js-object)
 (fire->clj js-object opts)
 
-Returns the clojure form of the js-object document. You can override
-any of the behavior by specifying the opts argument.
+Returns the clojure form of the js-object document from Firestore. opts
+allows you to modify the conversion.
 ```
 
 ```
