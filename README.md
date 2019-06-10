@@ -214,42 +214,29 @@ updates; this is error prone, verbose, and inefficient. Rather than getting
 Luke once, let's watch him from now on.
 
 ```clojurescript
-(def luke-chan (watch luke-reference))
-
-(def luke-atm (atom nil)
-
-(go-loop [i 2]
-  (when-let [luke (<! luke-chan)]
-    (println i "luke ->" luke)
-    (reset! luke-atm luke)
-    (recur (inc i))))
-
-TODO: Stupid, make this thread safe
-
 (async/go
-  (let [luke (<! c)]
+  (let [luke-chan (watch luke-reference)
+        luke (atom (<! luke-chan))]
+    (println "Initial Luke ->" @luke)
 
-    (println "Adding in Luke's initial occupation...")
+    (println "Adding in Luke's teenage occupation...")
     (<! (write! luke-reference (assoc luke :occupation "farmboy")))
-    (<! (timeout 1000))
+    (reset! luke (<! luke-chan))
+    (println "teenage Luke ->" @luke)
 
     (println "Changing Luke's adult occupation...")
     (<! (write! luke-reference (assoc luke :occupation "jedi")))
-    (<! (timeout 1000))
+    (reset! luke (<! luke-chan))
+    (println "adult Luke ->" @luke)
 
     (println "Changing to Lukes final occupation after episode 7")
     (<! (write! luke-reference (assoc luke :occupation "One with the Force")))
-    (<! (timeout 1000))
+    (reset! luke (<! luke-chan))
+    (println "final Luke ->" @luke)
 
     ;; Remember to close the channel when you are done with it!
-    ;; (Stop watching Luke)
     (close! luke-chan)))
 ```
-
-I put small pauses of 1 second between each change to Luke so that we can
-observe the go-loop println firing. Notice that Luke 1 is the initial value of
-of luke-reference in the database. Luke 2, 3, and 4 reflect the three separate
-changes made to the Luke document.
 
 ```
 Usage:
@@ -294,8 +281,16 @@ upon the channel. The channel will then be closed.
 Note:
 put! ->  clojure.core.async/put!
 ```
+```
+Usage:
+(delete! reference)
 
-TODO: Delete
+Returns a channel. Iff an error occurs when deleting reference from Firestore,
+then the error will be put! upon the channel. The channel will then be closed.
+
+Note:
+put! -> clojure.core.async/put!
+```
 
 ## <a id="clojure_interop"></a> Clojure Interop
 
