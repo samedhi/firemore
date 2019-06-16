@@ -7,7 +7,6 @@ Main features include:
 1. Automatic (and customizable) conversions between clojure maps and Firestore "json" documents.
 1. A channels based API for getting and observing Firestore documents.
 1. A binding between the Firestore Cloud database and a local clojure atom (great for om/re-frame/reagent).
-1. Simply update the document in the atom effect the change in the
 
 # Table of Contents
 1. [Getting Started](#getting_started)
@@ -33,7 +32,260 @@ To use firemore in an existing project, simply add this to your dependencies in 
 
 The following is a walkthrough of the main features of firemore.
 
+## References
+
+Read the documentation on [documents, collections,
+and references](https://firebase.google.com/docs/firestore/data-model) (just
+the linked page). Go ahead. I'll wait.
+
+As you just read, a Firestore reference is a opaque javascript object with a
+bunch of functions attached to it. In firemore a reference is a vector of
+keywords or strings with length at least 1.
+
+So, the following document reference in firestore
+```
+db.collection('users').doc('alovelace');
+```
+Becomes this in firemore:
+```
+["users" "alovelace"] ;; OR
+[:users "alovelace"]  ;; OR
+["users" :alovelace]  ;; OR
+[:users :alovelace]
+```
+
+Note that keywords and strings are interchangeable. I prefer to use keywords
+in collection (odd) positions and strings in (even) positions, but it is up to
+you.
+
+Note that a vector of even length must be a reference to a
+document, while a vector of odd length must be a reference to a collection. So
+`[:users]` is a reference to the `users` collection. While
+`[:users "alovelace"]` is a reference to a document *within* the `users`
+collection.
+
+## Read from Firestore
+
+The map to your right shows the data currently in your section of the firestore
+database. I have taken the liberty of setting you up with some starting data so
+that we can practice reading it using firemore.
+
+```clojurescript
+(def user-atm (get-user-atom))
+
+(def user-id (:uid @user-atm))
+
+(def luke-reference [:users user-id :characters "luke"])
+```
+
+Note that the reference (vector) begins with `[:users user-id]`. This is because
+I have set up [security rules](https://firebase.google.com/docs/firestore/security/get-started)
+so you and only you may read and write to a location
+under `users/<user-id>` in the Firestore database. This is necessary because
+this database is being used by everyone currently looking at this documentation. The
+security rule allows me to carve out a little place in the database for you to
+work within without conflicting with others.
+
+Is Luke Skywalker a force user? I can never remember? Let's check!
+```clojurescript
+(go
+  (let [luke (<! (get luke-reference))]
+  (println "luke ->" luke)
+
+  (println "Is luke a force user? " (:force-user? luke))))
+```
+
+That's right, he does have force powers! Couldn't remember.
+
+A firemore document is a regular [clojure map](https://clojure.org/reference/data_structures#Maps).
+There is a fair amount of code to allow for conversion between a Firestore
+document and a firemore document (see [Clojure Interop](#clojure_interop) for details).
+
+```
+Usage:
+(get reference)
+
+Returns a channel. If a document exist at reference, it will be put! upon the
+channel. If no document exist at reference, then :firemore/no-document will be
+put! on the channel. The channel will then be closed.
+
+Note:
+put! ->  clojure.core.async/put!
+```
+
+But what if I want to watch Luke change over time? I could periodically check for
+updates; this is error prone, verbose, and inefficient. Rather than getting
+Luke once, let's watch him from now on.
+
+```clojurescript
+(async/go
+  (let [luke-chan (watch luke-reference)
+        initial-luke (<! luke-chan)]
+    (println "Initial Luke ->" initial-luke)
+
+    (println "Mergin in Luke's teenage occupation...")
+    (merge! luke-reference {:occupation "farmboy"})
+    (println "teenage Luke ->" (<! luke-chan))
+
+    (println "Changing Luke's adult occupation...")
+    (write! luke-reference (assoc initial-luke :occupation "jedi"))
+    (println "adult Luke ->" (<! luke-chan))
+
+    (println "Changing to Lukes final occupation after episode 7")
+    (write! luke-reference (assoc luke :occupation "One with the Force"}))
+    (println "Episode 7 Luke ->" (<! luke-chan))
+
+    (println "Remove luke from the Firestore database")
+    (delete! luke-reference)
+    (println "Removed Luke reference ->" (<! luke-chan))
+
+    ;; Remember to close the channel when you are done with it!
+    (close! luke-chan)))
+```
+
+```
+Usage:
+(watch reference)
+
+Returns a channel. If a document exist at reference, it will be put! upon
+the channel. If no document exist at reference, then :firemore/no-document will
+be put! on the channel. As the document at reference is updated through
+time, the channel will put! the newest value of the document (if it exist)
+or :firemore/no-document (if it does not) upon the channel.
+
+Important: close! the channel to clean up the state machine feeding this
+channel. Failure to close the channel will result in a memory leak.
+
+Note:
+put! ->  clojure.core.async/put!
+close! ->  clojure.core.async/close!
+```
+
+## Write to Firestore
+
+```
+Usage:
+(write! reference m)
+
+Returns a channel. Overwrites the document at reference with m.  Iff an error
+occurs when writing m to Firestore, then the error will be put! upon the
+channel. The channel will then be closed.
+
+Note:
+put! ->  clojure.core.async/put!
+```
+
+```
+Usage:
+(merge! reference m)
+
+Returns a channel. Updates (merges in novelty) the document at reference with m.
+Iff an error occurs when writing m to Firestore, then the error will be put!
+upon the channel. The channel will then be closed.
+
+Note:
+put! ->  clojure.core.async/put!
+```
+
+```
+Usage:
+(delete! reference)
+
+Returns a channel. Iff an error occurs when deleting reference from Firestore,
+then the error will be put! upon the channel. The channel will then be closed.
+
+Note:
+put! -> clojure.core.async/put!
+```
+
+## Queries
+
+First [read the documentation on queries](https://firebase.google.com/docs/firestore/query-data/queries). As you just read, in Firestore queries are built from a collection reference. In
+firemore queries are built by adding a query map to the end of the reference
+vector.
+
+So this in Firestore
+```
+db.collection("cities").where("state", "==", "CA").where("population", "<", 1000000);
+```
+
+becomes this in firemore
+```
+[:cities {:where [["state" "==" "CA"]
+                  ["population" "<" 1000000]]}]
+```
+
+Queries also support the [orderBy and limit option](https://firebase.google.com/docs/firestore/query-data/order-limit-data).
+
+So this in Firestore
+```
+citiesRef.where("population", ">", 100000).orderBy("population").orderBy("state", "desc").limit(2)
+```
+
+becomes this in firemore
+```
+[:cities {:where [["population" "<" 1000000]]
+          :order [["population" "asc"] ["state" "desc"]]
+          :limit 2}]
+```
+
+If you have only one `:where` clause predicate, it is fine to specify it as a
+single vector. So this is also equivalent to the above.
+```
+[:cities {:where ["population" "<" 1000000]
+          :order [["population" "asc"] ["state" "desc"]]
+          :limit 2}]
+```
+
+In a similar fashion, the `:order` keys are actually all expanded into 2 element
+vectors of `[<property> "asc"]` if they are specified as strings. So the following
+is also equivalent to the above.
+
+```
+[:cities {:where ["population" "<" 1000000]
+          :order ["population" ["state" "desc"]]
+          :limit 2}]
+```
+
+
+## Build Local State Atom
+
+:firemore/path to indicate that this is a path that should hydrate at this Locations
+can shortcut by just providing a path (a vector).
+
+What about the notion of unifying the local path and the firestore path with a keyword? No keyword
+or unfound keyword means just use the local-path for firestore... Maybe dumb actually.
+
+documents paths just become maps with the additional key of :firemore/path in their metadata
+
+collections become maps of maps with the key being the id of the item. The collection itself
+will have the collection path in :firemore/path. Similarily, each document with have the
+document path in firemore-path.
+
+```
+Usage:
+(hydrate structure-map)
+(hydrate atm structure-map)
+
+Returns a atom that will be built and updated from the supplied Firestore
+references. 2 argument version can be used to update an existing atom to
+the new structured-map.
+
+Important: Close with (-> <returned_atom> deref meta :close (apply [])). Failure
+to close the event machine that updates this atom will result in a memory leak.
+```
+
+```
+Usage:
+(realize-collection chan)
+
+Returns a atom containing a map. chan is a channel that sequences a collection
+of documents. As the chan has documents marked as being added, updated, and
+deleted, they will be correspondingly updated in the realized atom.
+```
+
 ## Authentication
+
 Most apps require some way of authenticating a user.
 Firestore includes a fairly robust [Authentication System](https://firebase.google.com/docs/auth).
 Use of the built in authentication system will allow you to complete your project
@@ -93,9 +345,7 @@ login as a new anonymous user).
 
 ```clojurescript
 ;; Of course, you can also logout, let's demonstrate this.
-
 (println "(1) user-atm -> " @user-atm)
-
 (logout)
 (println "(2) user-atm ->" @user-atm)
 ```
@@ -128,170 +378,6 @@ map returned by (get-user-atom). Note that this does NOT delete information
 relating to the user from the actual Firestore database.
 ```
 
-## References
-
-Read the documentation on [documents, collections,
-and references](https://firebase.google.com/docs/firestore/data-model) (just
-the linked page). Go ahead. I'll wait.
-
-As you just read, a Firestore reference is a opaque javascript object with a
-bunch of functions attached to it. In firemore a reference is a vector of
-keywords or strings with length at least 1.
-
-So, the following document reference in firestore
-```
-db.collection('users').doc('alovelace');
-```
-Becomes this in firemore:
-```
-["users" "alovelace"] ;; OR
-[:users "alovelace"]  ;; OR
-["users" :alovelace]  ;; OR
-[:users :alovelace]
-```
-
-Note that keywords and strings are interchangeable. I prefer to use keywords
-in collection (odd) positions and strings in (even) positions, but it is up to
-you.
-
-Note that a vector of even length must be a reference to a
-document, while a vector of odd length must be a reference to a collection. So
-`[:users]` is a reference to the `users` collection. While
-`[:users "alovelace"]` is a reference to a document *within* the `users`
-collection.
-
-## Read from Firestore
-
-The map to your right shows the data currently in your section of the firestore
-database. I have taken the liberty of setting you up with some starting data so
-that we can practice reading it using firemore.
-
-```clojurescript
-(def user-atm (get-user-atom))
-
-(def user-id (:uid @user-atm))
-
-(def luke-reference [:users user-id :characters "luke"])
-```
-
-Note that the reference (vector) begins with `[:users user-id]`. This is because
-I have set up [security rules](https://firebase.google.com/docs/firestore/security/get-started)
-so you and only you may read and write to a location
-under `users/<user-id>` in the Firestore database. This is necessary because
-this database is being used by everyone currently looking at this document. The
-security rule allows me to carve out a little place in the database for you to
-work within without conflicting with others.
-
-Is Luke Skywalker a force user? I can never remember? Let's check!
-```clojurescript
-(def luke (<! (get luke-reference)))
-
-(println "luke ->" luke)
-
-(:force-user? luke)
-```
-
-That's right, he does have force powers! Couldn't remember.
-
-A firemore document is a regular [clojure map](https://clojure.org/reference/data_structures#Maps).
-There is a fair amount of conversion to allow for conversion between a Firestore
-document and a firemore document (see [Clojure Interop](#clojure_interop) for details).
-
-```
-Usage:
-(get reference)
-
-Returns a channel. If a document exist at reference, it will be put! upon the
-channel. If no document exist at reference, then :firemore/no-document will be
-put! on the channel. The channel will then be closed.
-
-Note:
-put! ->  clojure.core.async/put!
-```
-
-But what if I want to watch Luke change over time? I could periodically check for
-updates; this is error prone, verbose, and inefficient. Rather than getting
-Luke once, let's watch him from now on.
-
-```clojurescript
-(async/go
-  (let [luke-chan (watch luke-reference)
-        luke (atom (<! luke-chan))]
-    (println "Initial Luke ->" @luke)
-
-    (println "Adding in Luke's teenage occupation...")
-    (<! (write! luke-reference (assoc luke :occupation "farmboy")))
-    (reset! luke (<! luke-chan))
-    (println "teenage Luke ->" @luke)
-
-    (println "Changing Luke's adult occupation...")
-    (<! (write! luke-reference (assoc luke :occupation "jedi")))
-    (reset! luke (<! luke-chan))
-    (println "adult Luke ->" @luke)
-
-    (println "Changing to Lukes final occupation after episode 7")
-    (<! (write! luke-reference (assoc luke :occupation "One with the Force")))
-    (reset! luke (<! luke-chan))
-    (println "final Luke ->" @luke)
-
-    ;; Remember to close the channel when you are done with it!
-    (close! luke-chan)))
-```
-
-```
-Usage:
-(watch reference)
-
-Returns a channel. If a document exist at reference, it will be put! upon
-the channel. If no document exist at reference, then :firemore/no-document will
-be put! on the channel. As the document at reference is updated through
-time, the channel will put! the newest value of the document (if it exist)
-or :firemore/no-document (if it does not) upon the channel.
-
-Important: close! the channel to clean up the state machine feeding this
-channel. Failure to close the channel will result in a memory leak.
-
-Note:
-put! ->  clojure.core.async/put!
-close! ->  clojure.core.async/close!
-```
-
-## Write to Firestore
-
-```
-Usage:
-(write! reference m)
-
-Returns a channel. Overwrites the document at reference with m.  Iff an error
-occurs when writing m to Firestore, then the error will be put! upon the
-channel. The channel will then be closed.
-
-Note:
-put! ->  clojure.core.async/put!
-```
-
-```
-Usage:
-(merge! reference m)
-
-Returns a channel. Updates (merges in novelty) the document at reference with m.
-Iff an error occurs when writing m to Firestore, then the error will be put!
-upon the channel. The channel will then be closed.
-
-Note:
-put! ->  clojure.core.async/put!
-```
-```
-Usage:
-(delete! reference)
-
-Returns a channel. Iff an error occurs when deleting reference from Firestore,
-then the error will be put! upon the channel. The channel will then be closed.
-
-Note:
-put! -> clojure.core.async/put!
-```
-
 ## <a id="clojure_interop"></a> Clojure Interop
 
 ```
@@ -309,42 +395,6 @@ allows you to modify the conversion.
 
 Returns a javascript object that can be passed to Firestore for writes. opts
 allows you to modify the conversion.
-```
-
-## Build Local State Atom
-
-:firemore/path to indicate that this is a path that should hydrate at this Locations
-can shortcut by just providing a path (a vector).
-
-What about the notion of unifying the local path and the firestore path with a keyword? No keyword
-or unfound keyword means just use the local-path for firestore... Maybe dumb actually.
-
-documents paths just become maps with the additional key of :firemore/path in their metadata
-
-collections become maps of maps with the key being the id of the item. The collection itself
-will have the collection path in :firemore/path. Similarily, each document with have the
-document path in firemore-path.
-
-```
-Usage:
-(hydrate structure-map)
-(hydrate atm structure-map)
-
-Returns a atom that will be built and updated from the supplied Firestore
-references. 2 argument version can be used to update an existing atom to
-the new structured-map.
-
-Important: Close with (-> <returned_atom> deref meta :close (apply [])). Failure
-to close the event machine that updates this atom will result in a memory leak.
-```
-
-```
-Usage:
-(realize-collection chan)
-
-Returns a atom containing a map. chan is a channel that sequences a collection
-of documents. As the chan has documents marked as being added, updated, and
-deleted, they will be correspondingly updated in the realized atom.
 ```
 
 # <a id="api"></a>API
