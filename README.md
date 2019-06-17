@@ -237,7 +237,7 @@ single vector. So this is also equivalent to the above.
           :limit 2}]
 ```
 
-In a similar fashion, the `:order` keys are actually all expanded into 2 element
+In a similar fashion, the `:order` values are expanded into 2 element
 vectors of `[<property> "asc"]` if they are specified as strings. So the following
 is also equivalent to the above.
 
@@ -247,8 +247,48 @@ is also equivalent to the above.
           :limit 2}]
 ```
 
+Finally, the `:start-at`, `:start-after`, and `end-at` options from [paginate data with query-cursors](https://firebase.google.com/docs/firestore/query-data/query-cursors)
+are also supported as options.
 
 ## Build Local State Atom
+
+But what if all you need is to display a increment counter's value? One way to
+do it would be the following.
+
+```clojurescript
+(def counter-reference [:users user-id :counter "counter-1"])
+
+(def counter-chan (watch counter-reference))
+
+(def counter (atom 0))
+
+(go-loop []
+  (when-let [{:keys [value]} (<! counter-chan)]
+    (reset! counter value)
+    (aset! (js/document.querySelector "#counter-id") "value" value)
+    (recur)))
+
+(aset! (js/document.querySelector "click-button")
+       "onclick"
+       (fn [event] (merge! counter-reference {:value (inc @counter))})))
+```
+
+This code works, though there are a number of bad smells relating to it. At
+minimum, these are issues.
+1. The `:value` at `counter-reference` is being updated from the last known value
+of `counter` *from the clients point of view*. This information could be stale at
+the time that `(merge! ...)` is called. A transaction is needed here to do this
+safely. Unfortunately, transactions are not yet supported in firemore (though of
+course can be used from Firestore), so I will not be dealing with this problem.
+1. This code is pretty "raw". We am directly attaching values ("value" and "onclick")
+by finding elements with specific ids. This is not maintainable at larger
+code sizes. My recommendation is to use [re-frame](https://github.com/Day8/re-frame)
+as your frontend. This will allow you to organize the code in a more readable and
+maintable way.
+1. It is an annoyance to have to create a channel from a reference, create a
+`go-loop` that consumes from said channel, create a atom that holds the "current"
+state of the reference, and close the channel in order to properly dispose the `go-loop`.
+
 
 :firemore/path to indicate that this is a path that should hydrate at this Locations
 can shortcut by just providing a path (a vector).
