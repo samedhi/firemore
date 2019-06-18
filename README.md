@@ -43,15 +43,15 @@ bunch of functions attached to it. In firemore a reference is a vector of
 keywords or strings with length at least 1.
 
 So, the following document reference in firestore
-```
+```javascript
 db.collection('users').doc('alovelace');
 ```
 Becomes this in firemore:
-```
+```clojure
 ["users" "alovelace"] ;; OR
-[:users "alovelace"]  ;; OR
+[:users  "alovelace"]  ;; OR
 ["users" :alovelace]  ;; OR
-[:users :alovelace]
+[:users  :alovelace]
 ```
 
 Note that keywords and strings are interchangeable. I prefer to use keywords
@@ -70,7 +70,7 @@ The map to your right shows the data currently in your section of the firestore
 database. I have taken the liberty of setting you up with some starting data so
 that we can practice reading it using firemore.
 
-```clojurescript
+```clojure
 (def user-atm (get-user-atom))
 
 (def user-id (:uid @user-atm))
@@ -78,18 +78,19 @@ that we can practice reading it using firemore.
 (def luke-reference [:users user-id :characters "luke"])
 ```
 
-Note that the reference (vector) begins with `[:users user-id]`. This is because
+Note that the reference begins with `[:users user-id]`. This is because
 I have set up [security rules](https://firebase.google.com/docs/firestore/security/get-started)
 so you and only you may read and write to a location
 under `users/<user-id>` in the Firestore database. This is necessary because
 this database is being used by everyone currently looking at this documentation. The
 security rule allows me to carve out a little place in the database for you to
-work within without conflicting with others.
+play without conflicting with others.
 
 Is Luke Skywalker a force user? I can never remember? Let's check!
-```clojurescript
+```clojure
 (go
   (let [luke (<! (get luke-reference))]
+
   (println "luke ->" luke)
 
   (println "Is luke a force user? " (:force-user? luke))))
@@ -117,13 +118,13 @@ But what if I want to watch Luke change over time? I could periodically check fo
 updates; this is error prone, verbose, and inefficient. Rather than getting
 Luke once, let's watch him from now on.
 
-```clojurescript
+```clojure
 (async/go
   (let [luke-chan (watch luke-reference)
         initial-luke (<! luke-chan)]
     (println "Initial Luke ->" initial-luke)
 
-    (println "Mergin in Luke's teenage occupation...")
+    (println "Merging in Luke's teenage occupation...")
     (merge! luke-reference {:occupation "farmboy"})
     (println "teenage Luke ->" (<! luke-chan))
 
@@ -132,7 +133,7 @@ Luke once, let's watch him from now on.
     (println "adult Luke ->" (<! luke-chan))
 
     (println "Changing to Lukes final occupation after episode 7")
-    (write! luke-reference (assoc luke :occupation "One with the Force"}))
+    (write! luke-reference (assoc initial-luke :occupation "One with the Force"}))
     (println "Episode 7 Luke ->" (<! luke-chan))
 
     (println "Remove luke from the Firestore database")
@@ -205,12 +206,12 @@ firemore queries are built by adding a query map to the end of the reference
 vector.
 
 So this in Firestore
-```
+```javascript
 db.collection("cities").where("state", "==", "CA").where("population", "<", 1000000);
 ```
 
 becomes this in firemore
-```
+```clojure
 [:cities {:where [["state" "==" "CA"]
                   ["population" "<" 1000000]]}]
 ```
@@ -218,12 +219,12 @@ becomes this in firemore
 Queries also support the [orderBy and limit option](https://firebase.google.com/docs/firestore/query-data/order-limit-data).
 
 So this in Firestore
-```
+```javascript
 citiesRef.where("population", ">", 100000).orderBy("population").orderBy("state", "desc").limit(2)
 ```
 
 becomes this in firemore
-```
+```clojure
 [:cities {:where [["population" "<" 1000000]]
           :order [["population" "asc"] ["state" "desc"]]
           :limit 2}]
@@ -231,7 +232,8 @@ becomes this in firemore
 
 If you have only one `:where` clause predicate, it is fine to specify it as a
 single vector. So this is also equivalent to the above.
-```
+
+```clojure
 [:cities {:where ["population" "<" 1000000]
           :order [["population" "asc"] ["state" "desc"]]
           :limit 2}]
@@ -241,7 +243,7 @@ In a similar fashion, the `:order` values are expanded into 2 element
 vectors of `[<property> "asc"]` if they are specified as strings. So the following
 is also equivalent to the above.
 
-```
+```clojure
 [:cities {:where ["population" "<" 1000000]
           :order ["population" ["state" "desc"]]
           :limit 2}]
@@ -252,42 +254,38 @@ are also supported as options.
 
 ## Build Local State Atom
 
-But what if all you need is to display a increment counter's value? One way to
-do it would be the following.
+Let's say you needed to keep track of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? How might you go about doing this?
 
-```clojurescript
-(def counter-reference [:users user-id :counter "counter-1"])
+```HTML
+The best stooge is <div id="best-stooge-value"></div>.
 
-(def counter-chan (watch counter-reference))
-
-(def counter (atom 0))
-
-(go-loop []
-  (when-let [{:keys [value]} (<! counter-chan)]
-    (reset! counter value)
-    (aset! (js/document.querySelector "#counter-id") "value" value)
-    (recur)))
-
-(aset! (js/document.querySelector "click-button")
-       "onclick"
-       (fn [event] (merge! counter-reference {:value (inc @counter))})))
+<button id="moe-button"></button>
+<button id="larry-button"></button>
+<button id="curly-button"></button>
 ```
 
-This code works, though there are a number of bad smells relating to it. At
-minimum, these are issues.
-1. The `:value` at `counter-reference` is being updated from the last known value
-of `counter` *from the clients point of view*. This information could be stale at
-the time that `(merge! ...)` is called. A transaction is needed here to do this
-safely. Unfortunately, transactions are not yet supported in firemore (though of
-course can be used from Firestore), so I will not be dealing with this problem.
-1. This code is pretty "raw". We am directly attaching values ("value" and "onclick")
-by finding elements with specific ids. This is not maintainable at larger
-code sizes. My recommendation is to use [re-frame](https://github.com/Day8/re-frame)
-as your frontend. This will allow you to organize the code in a more readable and
-maintable way.
-1. It is an annoyance to have to create a channel from a reference, create a
-`go-loop` that consumes from said channel, create a atom that holds the "current"
-state of the reference, and close the channel in order to properly dispose the `go-loop`.
+```clojure
+(def best-stooge-reference [:users user-id :best "stooge"])
+
+(def best-stooge-chan (watch best-stooge-reference))
+
+(go-loop []
+  (when-let [{:keys [value]} (<! best-stooge-chan)]
+    (reset! best-stooge value)
+    (aset! (js/document.querySelector "#best-stooge-value") "value" value)
+    (recur)))
+
+(doseq [stooge ["moe" "larry" "curly"]]
+  (aset! (js/document.querySelector (str "#" stooge "-button"))
+         "onclick"
+         (fn [event] (merge! counter-reference {:value stooge}))))
+```
+
+The following code works, but it is an annoyance to have to create a channel from a reference, create a
+`go-loop` that consumes from said channel, and close the channel in order to properly dispose the `go-loop`.
+Firemore has a solution to that.
+
+
 
 
 :firemore/path to indicate that this is a path that should hydrate at this Locations
@@ -331,7 +329,7 @@ Firestore includes a fairly robust [Authentication System](https://firebase.goog
 Use of the built in authentication system will allow you to complete your project
 more quickly and securely than rolling your own solutions.
 
-```clojurescript
+```clojure
 (def user-atm (get-user-atom))
 
 ;; The value within user-atm is currently nil as you are not logged in.
@@ -383,7 +381,7 @@ were to logout from this account or loose access to this system, there would be
 no way for you to log back in as this anonymous user (though you could always
 login as a new anonymous user).
 
-```clojurescript
+```clojure
 ;; Of course, you can also logout, let's demonstrate this.
 (println "(1) user-atm -> " @user-atm)
 (logout)
@@ -397,7 +395,7 @@ Usage:
 Log out the currently logged in user (if any).
 ```
 
-```clojurescript
+```clojure
 ;; Most applications will also need to allow users to delete their accounts.
 ;; This is trivial in Firestore.
 
