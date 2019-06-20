@@ -257,7 +257,7 @@ are also supported as options.
 Let's say you needed to keep track of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? How might you go about doing this?
 
 ```HTML
-The best stooge is <div id="best-stooge-value"></div>.
+The best stooge is <span id="best-stooge-value"></span>.
 
 <button id="moe-button"></button>
 <button id="larry-button"></button>
@@ -281,46 +281,37 @@ The best stooge is <div id="best-stooge-value"></div>.
          (fn [event] (merge! counter-reference {:value stooge}))))
 ```
 
-The following code works, but it is an annoyance to have to create a channel from a reference, create a
-`go-loop` that consumes from said channel, and close the channel in order to properly dispose the `go-loop`.
+The following code does works. However, it is an annoyance to have to create a channel from a reference, create a `go-loop` that consumes from said channel, and close the channel in order to properly dispose the `go-loop`.
+
 Firemore has a solution to that.
 
+```clojure
+(def atm (atom {:paths {[:friends] [:app user-id :friends]
+                        [:enemies] [:app user-id :enemies]
+                        [:favorite :dog] [:app user-id :favorite "dog"]
+                        [:favorite :cat] [:app user-id :favorite "cat"]}}))
 
+;; Allows us to see the changes to the atom over time
+(add-watch atm :print-firestore-changes
+  (fn [_ _ old new]
+    (let [only-in-old only-in-new _] (clojure.data/diff old new)]
+      (when-not (empty? only-in-old)
+        (println "Removed:")
+        (doseq [o only-in-old]
+          (println "-" o)))
+      (when-not (empty? only-in-new)
+        (println "Added:")
+        (doseq [n only-in-new]
+          (println "-" n))))))
 
+;; Updates figure-1 to the newest value within atm
+(add-watch atm :display-atom
+  (fn [_ _ _ new] (display-atom "figure-1" new)))
 
-:firemore/path to indicate that this is a path that should hydrate at this Locations
-can shortcut by just providing a path (a vector).
-
-What about the notion of unifying the local path and the firestore path with a keyword? No keyword
-or unfound keyword means just use the local-path for firestore... Maybe dumb actually.
-
-documents paths just become maps with the additional key of :firemore/path in their metadata
-
-collections become maps of maps with the key being the id of the item. The collection itself
-will have the collection path in :firemore/path. Similarily, each document with have the
-document path in firemore-path.
-
-```
-Usage:
-(hydrate structure-map)
-(hydrate atm structure-map)
-
-Returns a atom that will be built and updated from the supplied Firestore
-references. 2 argument version can be used to update an existing atom to
-the new structured-map.
-
-Important: Close with (-> <returned_atom> deref meta :close (apply [])). Failure
-to close the event machine that updates this atom will result in a memory leak.
+(realize atm)
 ```
 
-```
-Usage:
-(realize-collection chan)
-
-Returns a atom containing a map. chan is a channel that sequences a collection
-of documents. As the chan has documents marked as being added, updated, and
-deleted, they will be correspondingly updated in the realized atom.
-```
+As you can see in figure-1, all of the path/reference (key/value) pairs within `:paths` have become realized things within a map in `:firestore`. If you remove a key from `:paths` it will remove the same path from within `:firestore`. Similarly if you add a new path/reference to `:paths` it will add a corresponding location in `:firestore`.
 
 ## Authentication
 
