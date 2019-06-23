@@ -38,7 +38,7 @@ Read the documentation on [documents, collections,
 and references](https://firebase.google.com/docs/firestore/data-model) (just
 the linked page). Go ahead. I'll wait.
 
-As you just read, a Firestore reference is a opaque javascript object with a
+As you just read, a Firestore reference is a javascript object with a
 bunch of functions attached to it. In firemore a reference is a vector of
 keywords or strings with length at least 1.
 
@@ -55,14 +55,14 @@ Becomes this in firemore:
 ```
 
 Note that keywords and strings are interchangeable. I prefer to use keywords
-in collection (odd) positions and strings in (even) positions, but it is up to
+in collection (odd) positions and strings in id (even) positions, but it is up to
 you.
 
-Note that a vector of even length must be a reference to a
-document, while a vector of odd length must be a reference to a collection. So
-`[:users]` is a reference to the `users` collection. While
-`[:users "alovelace"]` is a reference to a document *within* the `users`
-collection.
+Note that a vector with an even number of keywords and strings must be a
+reference to a document, while a vector with a odd number of keywords and
+strings must be a reference to a collection. So `[:users]` is a reference to
+the `users` collection. While `[:users "alovelace"]` is a reference to a
+document *within* the `users` collection.
 
 ## Read from Firestore
 
@@ -91,9 +91,9 @@ Is Luke Skywalker a force user? I can never remember? Let's check!
 (go
   (let [luke (<! (get luke-reference))]
 
-  (println "luke ->" luke)
+    (println "luke ->" luke)
 
-  (println "Is luke a force user? " (:force-user? luke))))
+    (println "Is luke a force user? " (:force-user? luke))))
 ```
 
 That's right, he does have force powers! Couldn't remember.
@@ -114,9 +114,8 @@ Note:
 put! ->  clojure.core.async/put!
 ```
 
-But what if I want to watch Luke change over time? I could periodically check for
-updates; this is error prone, verbose, and inefficient. Rather than getting
-Luke once, let's watch him from now on.
+But what if I want to watch Luke change over time? What if I want to be notified
+as Luke changes? Rather than getting Luke once, let's watch him from now on.
 
 ```clojure
 (async/go
@@ -143,6 +142,12 @@ Luke once, let's watch him from now on.
     ;; Remember to close the channel when you are done with it!
     (close! luke-chan)))
 ```
+
+In the above example, the first value of Luke pulled from `luke-chan` is placed
+within `initial-luke`. This is the current value of Luke and is equivalent to what
+you would get with `get`. Every time I `write!`, `merge!` or `delete!` upon the
+`luke-reference`, I get the updated version of Luke placed within the
+`luke-chan`.
 
 ```
 Usage:
@@ -254,7 +259,7 @@ are also supported as options.
 
 ## Build Local State Atom
 
-Let's say you needed to keep track of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? How might you go about doing this?
+Let's say you needed to keep track of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? How might you go about doing this with our current knowledge?
 
 ```HTML
 The best stooge is <span id="best-stooge-value"></span>.
@@ -271,7 +276,6 @@ The best stooge is <span id="best-stooge-value"></span>.
 
 (go-loop []
   (when-let [{:keys [value]} (<! best-stooge-chan)]
-    (reset! best-stooge value)
     (aset! (js/document.querySelector "#best-stooge-value") "value" value)
     (recur)))
 
@@ -281,7 +285,9 @@ The best stooge is <span id="best-stooge-value"></span>.
          (fn [event] (merge! counter-reference {:value stooge}))))
 ```
 
-The following code does works. However, it is an annoyance to have to create a channel from a reference, create a `go-loop` that consumes from said channel, and close the channel in order to properly dispose the `go-loop`.
+The previous code does works. However, it is an annoyance to have to create a
+channel from a reference, create a `go-loop` that consumes from said channel,
+and close the channel in order to properly dispose of the `go-loop`.
 
 Firemore has a solution to that.
 
@@ -304,14 +310,35 @@ Firemore has a solution to that.
         (doseq [n only-in-new]
           (println "-" n))))))
 
-;; Updates figure-1 to the newest value within atm
+;; Updates figure-1 to the newest value
 (add-watch atm :display-atom
   (fn [_ _ _ new] (display-atom "figure-1" new)))
 
-(realize atm)
+(hydrate atm)
+```
+As you can see in **figure-1**, all of the path/reference (key/value) pairs
+within `:paths` have become realized things within `:firestore`. If you remove
+a key from `:paths` it will remove the same path from within `:firestore`.
+Similarly if you add a new path/reference to `:paths` it will add a
+corresponding location in `:firestore`.
+
+```
+Usage:
+(hydrate atom)
+
+Returns nil. Noop if atom is already hydrated. Adds a watch that causes atom to
+automatically sync its :paths and :references root keys. :paths should be a
+key value pair where the key is a path and the value is a reference. :paths can
+have keys added and removed. :references will throw a error if you attempt to
+modify them.
 ```
 
-As you can see in figure-1, all of the path/reference (key/value) pairs within `:paths` have become realized things within a map in `:firestore`. If you remove a key from `:paths` it will remove the same path from within `:firestore`. Similarly if you add a new path/reference to `:paths` it will add a corresponding location in `:firestore`.
+```
+Usage:
+(unhydrate atom)
+
+Returns nil. Noop if atom is already unhydrated.
+```
 
 ## Authentication
 
@@ -321,31 +348,43 @@ Use of the built in authentication system will allow you to complete your projec
 more quickly and securely than rolling your own solutions.
 
 ```clojure
-(def user-atm (get-user-atom))
+(def user-chan (get-user))
 
-;; The value within user-atm is currently nil as you are not logged in.
-(assert (= nil @user-atm))
+(go
+  ;; The value within user-atm is currently :firemore/logged-out as you are not logged in.
+  (assert (= :firemore/logged-out (<! user-chan)))
 
-;; Let's log you in as the anonymous user
-(login-as-anonymous)
+  ;; Let's log you in as the anonymous user
+  (login-as-anonymous!)
 
-;; having done that, let's check what user-atm looks like now
-(println "(1) user-atm contains -> " @user-atm)
+  ;; having done that, let's check what user looks like now
+  (println "(1) your current user is -> " (<! user-chan))
 
-;; Let's demonstrate logging in and out a few times. Note that your `:uid`
-;; changes every time you login again with a new anonymous user.
-(login-as-anonymous)
-(println "(2) user-atm contains ->" @user-atm)
+  ;; Let's demonstrate logging in and out a few times. Note that your `:uid`
+  ;; changes every time you login again with a new anonymous user.
+  (login-as-anonymous!)
+  (println "(2) your current user is ->" (<! user-chan))
 
-(login-as-anonymous)
-(println "(3) user-atm contains ->" @user-atm)
+  (login-as-anonymous!)
+  (println "(3) your current user is -> " (<! user-chan))
+
+  ;; Of course, you can also logout, let's demonstrate this.
+  (logout!)
+  (println "(4) your current user is -> " (= :firemore/logged-out (<! user-chan))))
 ```
+
+The above code logs you in as various anonymous users. Anonymous does NOT mean
+unidentified (you have a unique user id in `:uid`). Anonymous does however mean that
+we don't know your `:email`, `:name`, or `:photo`. Anonymous means that if you
+were to logout from this account or loose access to this system, there would be
+no way for you to log back in as this anonymous user (though you could always
+login as a new anonymous user).
 
 ```
 Usage:
-(get-user-atom)
+(get-user)
 
-Returns a atom containing either a user-map or nil. Atom will contain nil when
+Returns a channel containing either a user-map or nil. Atom will contain nil when
 no user is logged into Firestore. Atom will contain a user-map if a user is
 currently logged in. user-map has the following form:
 
@@ -360,46 +399,41 @@ on sign-in provider and/or whether you have set their values.
 
 ```
 Usage:
-(login-as-anonymous)
-
-Log out any existing user, then log in a new anonymous user.
-```
-
-You have been logged in as a anonymous user. Anonymous does NOT mean
-unidentified (you have a unique user id in `:uid`). Anonymous does however mean that
-we don't know your `:email`, `:name`, or `:photo`. Anonymous means that if you
-were to logout from this account or loose access to this system, there would be
-no way for you to log back in as this anonymous user (though you could always
-login as a new anonymous user).
-
-```clojure
-;; Of course, you can also logout, let's demonstrate this.
-(println "(1) user-atm -> " @user-atm)
-(logout)
-(println "(2) user-atm ->" @user-atm)
-```
-
-```
-Usage:
-(logout)
+(logout!)
 
 Log out the currently logged in user (if any).
 ```
 
-```clojure
-;; Most applications will also need to allow users to delete their accounts.
-;; This is trivial in Firestore.
-
-(login-as-anonymous)
-(println "Check that we have a user ->" @user-atm)
-
-(delete-user)
-(println "We have been logged out as our user is deleted ->" @user-atm)
 ```
+Usage:
+(login-as-anonymous!)
+
+Log out any existing user, then log in a new anonymous user.
+```
+
+```clojure
+(go
+  (def user-chan (get-user))
+
+  (assert (= :firemore/logged-out (<! user-chan)))
+
+  (login-as-anonymous!)
+  (println "Check that we have a user ->" (<! user-chan))
+
+  (delete-user!)
+  (println "logged out and user is deleted ->" (= :firemore/logged-out
+                                                  (<! user-chan))))
+```
+
+Most applications will also need to allow users to delete their accounts.
+This is trivial in firemore. Note that this only deletes the user entry from the
+Firestore Authentication, it does not delete any associated data
+within the Firestore Database. For more on cleaning up after user deletion, see
+[Trigger a function on user deletion](https://firebase.google.com/docs/auth/extend-with-functions#trigger_a_function_on_user_deletion)
 
 ```
 Usage:
-(delete-user)
+(delete-user!)
 
 Deletes the user specified by user-id from Firestore. This removes all sign-in
 providers for this user, as well as deleting the data in the user information
