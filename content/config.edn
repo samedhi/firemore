@@ -1,7 +1,7 @@
-{:site-title           "My Awesome Blog"
- :author               "Bob Bobbert"
- :description          "This blog is awesome"
- :site-url             "http://blogawesome.com/"
+{:site-title           "Firemore Docs"
+ :author               "Stephen Cagle"
+ :description          "Documentation for firemore"
+ :site-url             "https://samedhi.github.io/"
  :post-root            "posts"
  :page-root            "pages"
  :post-root-uri        "posts-output"
@@ -12,13 +12,13 @@
  :blog-prefix          "/firemore-docs"
  :rss-name             "feed.xml"
  :rss-filters          ["cryogen"]
- :recent-posts         3
+ :recent-posts         5
  :post-date-format     "yyyy-MM-dd"
  :archive-group-format "yyyy MMMM"
  :sass-src             []
  :sass-path            "sass"
  :compass-path         "compass"
- :theme                "blue"
+ :theme                "blue_centered"
  :resources            ["img"]
  :keep-files           [".git"]
  :disqus?              false
@@ -30,5 +30,5 @@
  :clean-urls           :trailing-slash
  :collapse-subdirs?    false
  :hide-future-posts?   true
- :klipse               {}
+ :klipse               {:settings {:selector ".klipse-cljs"}}
  :debug?               false}
