@@ -2,21 +2,17 @@
 
 porcelain=$(git status --porcelain)
 
-if [ -n "$porcelain" ]
-then
+if [ -n "$porcelain" ] ; then
     echo "PLEASE COMMIT YOUR CHANGE FIRST!!!"
     exit 1
 fi
 
-lein run
-
-if [[ ! -d ~/firemore-docs]]
-then
-    echo clone the firemore-docs project to ~.
-    echo `git clone git@github.com:samedhi/firemore-docs.git`
-    exit
+if [ ! -d ~/firemore-docs ] ; then
+    echo clone the git@github.com:samedhi/firemore-docs.git project to ~.
+    exit 1
 fi
 
+lein run
 cp -r public/firemore-docs/* ~/firemore-docs
 cd ~/firemore-docs
 git add .
