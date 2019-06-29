@@ -91,6 +91,22 @@
   on sign-in provider and/or whether you have set their values."
   [])
 
+(defn logout!
+  "Log out the currently logged in user (if any).o"
+  [])
+
+(defn login-as-anonymous!
+  "Log out any existing user, then log in a new anonymous user."
+  [])
+
+(defn delete-user!
+  "Deletes the currently logged in user from Firestore.
+
+  This removes all sign-in providers for this user, as well as deleting the data in the
+  user information map returned by (get-user-atom). Note that this does NOT delete
+  information relating to the user from the actual Firestore database."
+  [])
+
 ;; watchers
 
 (defn hydrate
