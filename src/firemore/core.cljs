@@ -2,6 +2,19 @@
 
 ;; interop
 
+(defn fire->clj
+  "Returns the clojure form of the `js-object` document from Firestore.
+  `opts` allows you to modify the conversion."
+  ([js-object] (fire->clj js-object {}))
+  ([js-object opts]))
+
+(defn clj->fire
+  "Returns a javascript object from the firemore `document` (a map).
+
+  `opts` allows you to modify the conversion."
+  ([document] (clj->fire document {}))
+  ([document opts]))
+
 ;; database
 
 (defn grab
