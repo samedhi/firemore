@@ -9,6 +9,13 @@
 # fi
 
 lein run
+
+if [[ ! -d ~/firemore-docs]] ; then
+    echo clone the firemore-docs project to ~.
+    echo `git clone git@github.com:samedhi/firemore-docs.git`
+    exit
+fi
+
 cp -r public/firemore-docs/* ~/firemore-docs
 cd ~/firemore-docs
 git add .
