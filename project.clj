@@ -12,18 +12,24 @@
                  [ring/ring-devel "1.7.1"]
                  [ring-server "0.5.0"]]
   :plugins [[lein-cljsbuild "1.1.6"]
-            [lein-doo "0.1.11"]
+            [lein-doo "0.1.10"] 
             [lein-figwheel "0.5.13"]
             [lein-ring "0.12.5"]]
   :cljsbuild {:builds
               [{:id "dev"
                 :figwheel true
                 :source-paths ["src" "test"]
-                :compiler {:main firemore.test-runner
+                :compiler {:main firemore.core
                            :optimizations :none
-                           :output-dir "resources/public/js/out"
-                           :asset-path "js/out"
-                           :output-to "resources/public/js/app.js"}}]}
+                           :output-dir "resources/public/js/out-dev"
+                           :asset-path "js/out-dev"
+                           :output-to "resources/public/js/app.js"}}
+               {:id "test"
+                :source-paths ["src" "test"]
+                :compiler {:main firemore.test-runner
+                           :optimizations :whitespace
+                           :output-dir "resources/public/js/out-test"
+                           :output-to "resources/public/js/test.js"}}]}
   :main cryogen.core
   :ring {:init cryogen.server/init
          :handler cryogen.server/handler})
