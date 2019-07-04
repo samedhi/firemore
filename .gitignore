@@ -14,3 +14,7 @@ pom.xml.asc
 .cpcache/
 /README.html
 /public
+/figwheel_server.log
+/.cljs_node_repl
+/resources/public/js
+
