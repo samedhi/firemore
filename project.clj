@@ -4,6 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[compojure "1.6.1"]
+                 [com.bhauman/cljs-test-display "0.1.1"]
                  [cryogen-markdown "0.1.11"]
                  [cryogen-core "0.2.1"]
                  [org.clojure/clojure "1.10.1"]

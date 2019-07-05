@@ -1,4 +1,6 @@
-(ns firemore.core)
+(ns firemore.core
+  (:require
+   [cljs.test :as test]))
 
 ;; interop
 

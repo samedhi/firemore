@@ -1,10 +1,17 @@
 (ns firemore.test-runner
   (:require
    [cljs.test :as t :include-macros true]
-   [doo.runner :refer-macros [doo-all-tests]]
+   [cljs-test-display.core]
    [firemore.core-test]
    [firemore.firestore-test]))
 
 (enable-console-print!)
 
-(doo-all-tests)
+(defn test-run []
+  (t/run-tests
+   (cljs-test-display.core/init! "test")
+   'firemore.core-test
+   'firemore.firestore-test))
+
+(test-run)
+
