@@ -25,7 +25,7 @@
       (when (some? rs) (recur rs)))
     @a))
 
-(defn str->keyword
+(defn str->keywordize
   {:pre [(string? s)]}
   [s]
   (if (= (subs s 0 1) ":")
@@ -35,22 +35,19 @@
       (apply keyword $))
     s))
 
-(defn keyword->str
+(defn keywordize->str
   {:pre [(keyword? k)]}
   [k]
   (str k))
 
 (defn jsonify [value]
-  (clj->js value :keyword-fn keyword->str))
+  (clj->js value :keyword-fn keywordize->str))
 
 (defn clojurify [value]
-  (let [value (js->clj value)]
-    (if (map? value)
-      (reduce-kv
-       #(assoc %1 (keywordize %2) (if (string? %3) (keywordize %3) %3))
-       {}
-       value)
-      value)))
+  (reduce-kv
+   #(assoc %1 (str->keywordize %2) %3)
+   {}
+   (js->clj value)))
 
 (defn replace-timestamp [m]
   (->> m
