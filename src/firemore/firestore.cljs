@@ -16,30 +16,32 @@
 (defn db [firebase]
   (.firestore firebase))
 
-(defn split-keyword [k]
-  (if (= (name k) "add")
-    [(namespace k)]
-    [(namespace k) (name k)]))
-
 (defn ref [fb path]
   (let [a (-> fb db atom)]
-    (loop [[[col doc] & rs] (map split-keyword path)]
+    (loop [[[col doc] & rs] path]
       (reset! a (.collection @a col))
       (when (some? doc)
         (reset! a (.doc @a doc)))
       (when (some? rs) (recur rs)))
     @a))
 
-(defn keywordize [s]
+(defn str->keyword
+  {:pre [(string? s)]}
+  [s]
   (if (= (subs s 0 1) ":")
-    (keyword (subs s 1))
+    (as-> s $
+      (subs $ 1)
+      (string/split $ "/") 
+      (apply keyword $))
     s))
 
-(defn un-keywordize [kwd]
-  (str ":" (name kwd)))
+(defn keyword->str
+  {:pre [(keyword? k)]}
+  [k]
+  (str k))
 
 (defn jsonify [value]
-  (clj->js value :keyword-fn un-keywordize))
+  (clj->js value :keyword-fn keyword->str))
 
 (defn clojurify [value]
   (let [value (js->clj value)]
