@@ -50,11 +50,14 @@
    (js->clj value)))
 
 (defn replace-timestamp [m]
-  (->> m
-       (filter (fn [[_ v]] (= v :timestamp)))
-       (map (fn [[k v]] [k (.serverTimestamp js/firebase.firestore.FieldValue)]))
-       flatten
-       (apply assoc m)))
+  (reduce-kv
+   (fn [m k v]
+     (if (= v config/TIMESTAMP)
+       (let [ts (.serverTimestamp js/firebase.firestore.FieldValue)]
+         (assoc m k ts))
+       m))
+   m
+   m))
 
 (defn shared-db [fb path value]
   {:id (-> path peek name)

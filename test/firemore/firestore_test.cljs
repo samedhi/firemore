@@ -1,5 +1,6 @@
 (ns firemore.firestore-test
   (:require
+   [firemore.config :as config]
    [firemore.firestore :as sut]
    [cljs.test :as t :include-macros true]))
 
@@ -25,4 +26,7 @@
     {:a "1" :b 2 :c 3.1}
     {:a.real.long.key/is-awesome "foo"}))
 
-
+(t/deftest replace-timestamp-test
+  (t/is (not= config/TIMESTAMP
+              (-> {:a config/TIMESTAMP} sut/replace-timestamp :a)))
+  (t/is (some? (-> {:a config/TIMESTAMP} sut/replace-timestamp :a))))

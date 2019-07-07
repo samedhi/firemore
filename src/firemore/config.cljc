@@ -20,3 +20,5 @@
 (def TEST_EMAIL_PASSWORD "Ehgcm455dyN5bpH")
 
 (def app-max-width 1024)
+
+(def TIMESTAMP :firemore/timestamp)
