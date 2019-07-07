@@ -59,27 +59,41 @@
    m
    m))
 
-(defn shared-db [fb path value]
-  {:id (-> path peek name)
-   :ref (ref fb path)
-   :js-value (-> value replace-timestamp jsonify)})
+(defn build-path [fb path]
+  (merge
+   {:ref (ref fb path)
+    :path path}
+   (when (-> path count even?)
+     {:id (peek path)})))
 
-(defn set-db! [fb path value]
-  (let [{:keys [id ref js-value]} (shared-db fb path value)]
-    (if (= id "add")
+(defn build-query [fb path query]
+  (throw (js/Error "Haven't implemented this!")))
+
+(defn shared-db
+  {:pre [(vector? reference)]}
+  [fb reference value]
+  (if (-> reference peek map?)
+    (build-query (pop reference) (peek reference))
+    (build-path reference))
+  (when value
+    {:js-value (-> value replace-timestamp jsonify)}))
+
+(defn set-db! [fb reference value]
+  (let [{:keys [id ref js-value]} (shared-db fb reference value)]
+    (if id
       (.add ref js-value)
       (.set ref js-value))))
 
-(defn update-db! [fb path value]
-  (let [{:keys [ref js-value]} (shared-db fb path value)]
+(defn update-db! [fb reference value]
+  (let [{:keys [ref js-value]} (shared-db fb reference value)]
     (.update ref js-value)))
 
-(defn delete-db! [fb path]
-  (let [{:keys [ref]} (shared-db fb path nil)]
+(defn delete-db! [fb reference]
+  (let [{:keys [ref]} (shared-db fb reference nil)]
     (.delete ref)))
 
-(defn get-db! [fb path]
-  (let [{:keys [ref]} (shared-db fb path nil)
+(defn get-db! [fb reference]
+  (let [{:keys [ref]} (shared-db fb reference nil)
         c (async/chan)]
     (.then (.get ref)
            (fn [doc]
@@ -87,8 +101,8 @@
              (async/close! c)))
     c))
 
-(defn listen-db! [fb path]
-  (let [{:keys [ref]} (shared-db fb path nil)
+(defn listen-db! [fb reference]
+  (let [{:keys [ref]} (shared-db fb reference nil)
         c (async/chan)
         unsubscribe (atom nil)
         fx (fn [doc]
