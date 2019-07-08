@@ -70,19 +70,21 @@
   (throw (js/Error "Haven't implemented this!")))
 
 (defn shared-db
-  {:pre [(vector? reference)]}
-  [fb reference value]
-  (if (-> reference peek map?)
-    (build-query (pop reference) (peek reference))
-    (build-path reference))
-  (when value
-    {:js-value (-> value replace-timestamp jsonify)}))
+  ([fb reference]
+   {:pre [(vector? reference)]}
+   (if (-> reference peek map?)
+     (build-query fb (pop reference) (peek reference))
+     (build-path fb reference)))
+  ([fb reference value]
+   (merge
+    (shared-db fb reference)
+    {:js-value (-> value replace-timestamp jsonify)})))
 
 (defn set-db! [fb reference value]
   (let [{:keys [id ref js-value]} (shared-db fb reference value)]
     (if id
-      (.add ref js-value)
-      (.set ref js-value))))
+      (.set ref js-value)
+      (.add ref js-value))))
 
 (defn update-db! [fb reference value]
   (let [{:keys [ref js-value]} (shared-db fb reference value)]
@@ -92,7 +94,7 @@
   (let [{:keys [ref]} (shared-db fb reference nil)]
     (.delete ref)))
 
-(defn get-db! [fb reference]
+(defn get-db [fb reference]
   (let [{:keys [ref]} (shared-db fb reference nil)
         c (async/chan)]
     (.then (.get ref)
@@ -101,7 +103,7 @@
              (async/close! c)))
     c))
 
-(defn listen-db! [fb reference]
+(defn listen-db [fb reference]
   (let [{:keys [ref]} (shared-db fb reference nil)
         c (async/chan)
         unsubscribe (atom nil)
@@ -112,6 +114,6 @@
     (reset! unsubscribe (.onSnapshot ref fx))
     {:chan c :unsubscribe @unsubscribe}))
 
-(defn unlisten-db! [{:keys [chan unsubscribe]}]
+(defn unlisten-db [{:keys [chan unsubscribe]}]
   (unsubscribe)
   (async/close! chan))
