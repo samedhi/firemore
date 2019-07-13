@@ -43,11 +43,13 @@
 (defn jsonify [value]
   (clj->js value :keyword-fn keywordize->str))
 
-(defn clojurify [value]
-  (reduce-kv
-   #(assoc %1 (str->keywordize %2) %3)
-   {}
-   (js->clj value)))
+(defn clojurify [json-document]
+  (if json-document
+    (reduce-kv
+     #(assoc %1 (str->keywordize %2) %3)
+     {}
+     (js->clj json-document))
+    config/UNDEFINED))
 
 (defn replace-timestamp [m]
   (reduce-kv
@@ -133,10 +135,16 @@
   ([fb reference]
    (let [{:keys [ref]} (shared-db fb reference nil)
          c (async/chan)]
-     (.then (.get ref)
-            (fn [doc]
-              (some->> (.data doc) clojurify (async/put! c))
-              (async/close! c)))
+     (..
+      (.get ref)
+      (then
+       (fn [doc]
+         (->> (.data doc) clojurify (async/put! c))
+         (async/close! c)))
+      (catch
+          (fn [error]
+            (async/put! c error)
+            (async/close! c))))
      c)))
 
 (defn listen-db
@@ -144,14 +152,13 @@
   ([fb reference]
    (let [{:keys [ref]} (shared-db fb reference nil)
          c (async/chan)
-         unsubscribe (atom nil)
-         fx (fn [doc]
-              (let [data (clojurify (.data doc))]
-                (when-not (true? (async/put! c data))
-                  (@unsubscribe))))]
-     (reset! unsubscribe (.onSnapshot ref fx))
-     {:chan c :unsubscribe @unsubscribe})))
+         fx (fn [document]
+              (let [json-data (.data document)
+                    clojure-data (clojurify json-data)]
+                (async/put! c clojure-data)))
+         unsubscribe (.onSnapshot ref fx)
+         unsubscribe-fx #(do (async/close! c) (unsubscribe))]
+     {:chan c :unsubscribe unsubscribe-fx})))
 
-(defn unlisten-db [{:keys [chan unsubscribe]}]
-  (unsubscribe)
-  (async/close! chan))
+(defn unlisten-db [{:keys [unsubscribe]}]
+  (unsubscribe))

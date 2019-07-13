@@ -3,7 +3,8 @@
    [cljs.core.async :as async]
    [cljs.test :as t :include-macros true]
    [firemore.config :as config]
-   [firemore.firestore :as sut]))
+   [firemore.firestore :as sut]
+   [cljs.test :as test]))
 
 (t/deftest fundamentals-test
   (t/is (some? sut/OPTS))
@@ -63,7 +64,7 @@
        (t/is (nil? (async/<! (sut/set-db! reference m))))
        (t/is (= m  (async/<! (sut/get-db reference))))
        (t/is (nil? (async/<! (sut/delete-db! reference))))
-       (t/is (nil? (async/<! (sut/get-db reference))))
+       (t/is (= config/UNDEFINED (async/<! (sut/get-db reference))))
        (done)))))
 
 (t/deftest update-test
@@ -71,14 +72,28 @@
    done
    (async/go
      (let [reference ["test" "update-test"]
-           m {:string "update-test"}
+           m1 {:string "update-test"}
            m2 {:integer 1}]
-       (t/is (nil? (async/<! (sut/set-db! reference m))))
-       (t/is (= m  (async/<! (sut/get-db reference))))
+       (t/is (nil? (async/<! (sut/set-db! reference m1))))
+       (t/is (= m1  (async/<! (sut/get-db reference))))
        (t/is (nil? (async/<! (sut/update-db! reference m2))))
-       (t/is (= (merge m m2) (async/<! (sut/get-db reference))))
+       (t/is (= (merge m1 m2) (async/<! (sut/get-db reference))))
        (done)))))
 
-
-
-
+(t/deftest listening-test
+  (t/async
+   done
+   (async/go
+     (let [reference ["test" "listening-test"]
+           {:keys [chan unsubscribe]} (sut/listen-db reference)
+           m1 {:string "listening-test-1"}
+           m2 {:string "listening-test-2"}]
+       (t/is (= config/UNDEFINED (async/<! chan)))
+       (t/is (nil? (async/<! (sut/set-db! reference m1))))
+       (t/is (= m1 (async/<! chan)))
+       (t/is (nil? (async/<! (sut/set-db! reference m2))))
+       (t/is (= m2 (async/<! chan)))
+       (t/is (nil? (async/<! (sut/delete-db! reference))))
+       (t/is (= config/UNDEFINED (async/<! chan)))
+       (unsubscribe)
+       (done)))))

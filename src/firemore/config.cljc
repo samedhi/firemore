@@ -22,3 +22,5 @@
 (def app-max-width 1024)
 
 (def TIMESTAMP :firemore/timestamp)
+
+(def UNDEFINED :firemore/undefined)
