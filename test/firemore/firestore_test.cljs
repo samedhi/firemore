@@ -44,14 +44,27 @@
        (done)))))
 
 (t/deftest get-and-add-test
-  (let [reference ["test"]
-        m {:string "string-b"}]
-    (t/async
-     done
-     (async/go
-       (let [{:keys [id]} (async/<! (sut/add-db! reference m))]
-         (t/is (some? id))
-         (t/is (= m (async/<! (sut/get-db (conj reference id)))))
-         (done))))))
+  (t/async
+   done
+   (async/go
+     (let [reference ["test"]
+           m {:string "string-b"}
+           {:keys [id]} (async/<! (sut/add-db! reference m))]
+       (t/is (some? id))
+       (t/is (= m (async/<! (sut/get-db (conj reference id)))))
+       (done)))))
+
+(t/deftest delete-test
+  (t/async
+   done
+   (async/go
+     (let [reference ["test" "delete-me"]
+           m {:string "string-b"}]
+       (t/is (nil? (async/<! (sut/set-db! reference m))))
+       (t/is (= m  (async/<! (sut/get-db reference))))
+       (t/is (nil? (async/<! (sut/delete-db! reference))))
+       (t/is (nil? (async/<! (sut/get-db reference))))
+       (done)))))
+
 
 
