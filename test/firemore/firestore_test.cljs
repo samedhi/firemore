@@ -35,7 +35,7 @@
 
 (t/deftest get-and-set-test
   (let [reference ["test" "get-and-set-test"]
-        m {:string "string-a"}]
+        m {:string "get-and-set-test"}]
     (t/async
      done
      (async/go
@@ -48,7 +48,7 @@
    done
    (async/go
      (let [reference ["test"]
-           m {:string "string-b"}
+           m {:string "get-and-add-test"}
            {:keys [id]} (async/<! (sut/add-db! reference m))]
        (t/is (some? id))
        (t/is (= m (async/<! (sut/get-db (conj reference id)))))
@@ -59,12 +59,26 @@
    done
    (async/go
      (let [reference ["test" "delete-me"]
-           m {:string "string-b"}]
+           m {:string "delete-test"}]
        (t/is (nil? (async/<! (sut/set-db! reference m))))
        (t/is (= m  (async/<! (sut/get-db reference))))
        (t/is (nil? (async/<! (sut/delete-db! reference))))
        (t/is (nil? (async/<! (sut/get-db reference))))
        (done)))))
+
+(t/deftest update-test
+  (t/async
+   done
+   (async/go
+     (let [reference ["test" "update-test"]
+           m {:string "update-test"}
+           m2 {:integer 1}]
+       (t/is (nil? (async/<! (sut/set-db! reference m))))
+       (t/is (= m  (async/<! (sut/get-db reference))))
+       (t/is (nil? (async/<! (sut/update-db! reference m2))))
+       (t/is (= (merge m m2) (async/<! (sut/get-db reference))))
+       (done)))))
+
 
 
 
