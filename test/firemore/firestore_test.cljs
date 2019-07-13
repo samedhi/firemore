@@ -41,7 +41,7 @@
      done
      (async/go
        (t/is (nil? (async/<! (sut/set-db! reference m))))
-       (t/is (= m (async/<! (sut/get-db reference))))
+       (t/is (= m  (async/<! (sut/get-db reference))))
        (done)))))
 
 (t/deftest get-and-add-test
@@ -61,9 +61,9 @@
    (async/go
      (let [reference ["test" "delete-me"]
            m {:string "delete-test"}]
-       (t/is (nil? (async/<! (sut/set-db! reference m))))
-       (t/is (= m  (async/<! (sut/get-db reference))))
-       (t/is (nil? (async/<! (sut/delete-db! reference))))
+       (t/is (nil?               (async/<! (sut/set-db! reference m))))
+       (t/is (= m                (async/<! (sut/get-db reference))))
+       (t/is (nil?               (async/<! (sut/delete-db! reference))))
        (t/is (= config/UNDEFINED (async/<! (sut/get-db reference))))
        (done)))))
 
@@ -74,9 +74,9 @@
      (let [reference ["test" "update-test"]
            m1 {:string "update-test"}
            m2 {:integer 1}]
-       (t/is (nil? (async/<! (sut/set-db! reference m1))))
-       (t/is (= m1  (async/<! (sut/get-db reference))))
-       (t/is (nil? (async/<! (sut/update-db! reference m2))))
+       (t/is (nil?            (async/<! (sut/set-db! reference m1))))
+       (t/is (= m1            (async/<! (sut/get-db reference))))
+       (t/is (nil?            (async/<! (sut/update-db! reference m2))))
        (t/is (= (merge m1 m2) (async/<! (sut/get-db reference))))
        (done)))))
 
@@ -89,11 +89,11 @@
            m1 {:string "listening-test-1"}
            m2 {:string "listening-test-2"}]
        (t/is (= config/UNDEFINED (async/<! chan)))
-       (t/is (nil? (async/<! (sut/set-db! reference m1))))
-       (t/is (= m1 (async/<! chan)))
-       (t/is (nil? (async/<! (sut/set-db! reference m2))))
-       (t/is (= m2 (async/<! chan)))
-       (t/is (nil? (async/<! (sut/delete-db! reference))))
+       (t/is (nil?               (async/<! (sut/set-db! reference m1))))
+       (t/is (= m1               (async/<! chan)))
+       (t/is (nil?               (async/<! (sut/set-db! reference m2))))
+       (t/is (= m2               (async/<! chan)))
+       (t/is (nil?               (async/<! (sut/delete-db! reference))))
        (t/is (= config/UNDEFINED (async/<! chan)))
        (unsubscribe)
        (done)))))
