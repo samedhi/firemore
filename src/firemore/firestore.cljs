@@ -81,10 +81,33 @@
     {:js-value (-> value replace-timestamp jsonify)})))
 
 (defn set-db! [fb reference value]
-  (let [{:keys [id ref js-value]} (shared-db fb reference value)]
-    (if id
-      (.set ref js-value)
-      (.add ref js-value))))
+  (let [{:keys [id ref js-value]} (shared-db fb reference value)
+        c (async/chan)]
+    (..
+     (.set ref js-value)
+     (then
+      (fn [docRef]
+        (async/close! c)))
+     (catch
+         (fn [error]
+           (async/put! c error)
+           (async/close! c))))
+    c))
+
+(defn add-db! [fb reference value]
+  (let [{:keys [id ref js-value]} (shared-db fb reference value)
+        c (async/chan)]
+    (..
+     (.add ref js-value)
+     (then
+      (fn [docRef]
+        (async/put! c {:id (.-id docRef)})
+        (async/close! c)))
+     (catch
+         (fn [error]
+           (async/put! c error)
+           (async/close! c))))
+    c))
 
 (defn update-db! [fb reference value]
   (let [{:keys [ref js-value]} (shared-db fb reference value)]

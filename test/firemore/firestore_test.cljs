@@ -1,8 +1,9 @@
 (ns firemore.firestore-test
   (:require
+   [cljs.core.async :as async]
+   [cljs.test :as t :include-macros true]
    [firemore.config :as config]
-   [firemore.firestore :as sut]
-   [cljs.test :as t :include-macros true]))
+   [firemore.firestore :as sut]))
 
 (t/deftest fundamentals-test
   (t/is (some? sut/OPTS))
@@ -27,6 +28,30 @@
     {:a.real.long.key/is-awesome "foo"}))
 
 (t/deftest replace-timestamp-test
-  (t/is (not= config/TIMESTAMP
-              (-> {:a config/TIMESTAMP} sut/replace-timestamp :a)))
-  (t/is (some? (-> {:a config/TIMESTAMP} sut/replace-timestamp :a))))
+  (let [m {:a config/TIMESTAMP}]
+    (t/is (not= config/TIMESTAMP
+                (->  sut/replace-timestamp :a)))
+    (t/is (some? (-> m sut/replace-timestamp :a)))))
+
+(t/deftest get-and-set-test
+  (let [reference ["test" "get-and-set-test"]
+        m {:string "string-a"}]
+    (t/async
+     done
+     (async/go
+       (t/is (nil? (async/<! (sut/set-db! sut/FB reference m))))
+       (t/is (= m (async/<! (sut/get-db sut/FB reference))))
+       (done)))))
+
+(t/deftest get-and-add-test
+  (let [reference ["test"]
+        m {:string "string-b"}]
+    (t/async
+     done
+     (async/go
+       (let [{:keys [id]} (async/<! (sut/add-db! sut/FB reference m))]
+         (t/is (some? id))
+         (t/is (= m (async/<! (sut/get-db sut/FB (conj reference id)))))
+         (done))))))
+
+
