@@ -80,21 +80,24 @@
     (shared-db fb reference)
     {:js-value (-> value replace-timestamp jsonify)})))
 
+(defn promise->chan [fx]
+  (let [c (async/chan)]
+    (..
+     (fx)
+     (then
+      (fn [docRef]
+        (async/close! c)))
+     (catch
+         (fn [error]
+           (async/put! c error)
+           (async/close! c))))
+    c))
+
 (defn set-db!
   ([reference value] (set-db! FB reference value))
   ([fb reference value]
-   (let [{:keys [id ref js-value]} (shared-db fb reference value)
-         c (async/chan)]
-     (..
-      (.set ref js-value)
-      (then
-       (fn [docRef]
-         (async/close! c)))
-      (catch
-          (fn [error]
-            (async/put! c error)
-            (async/close! c))))
-     c)))
+   (let [{:keys [id ref js-value]} (shared-db fb reference value)]
+     (promise->chan #(.set ref js-value)))))
 
 (defn add-db!
   ([reference value] (add-db! FB reference value))
@@ -117,13 +120,13 @@
   ([reference value] (update-db! FB reference value))
   ([fb reference value]
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
-     (.update ref js-value))))
+     (promise->chan #(.update ref js-value)))))
 
 (defn delete-db!
   ([reference] (delete-db! FB reference))
   ([fb reference]
    (let [{:keys [ref]} (shared-db fb reference nil)]
-     (.delete ref))))
+     (promise->chan #(.delete ref)))))
 
 (defn get-db
   ([reference] (get-db FB reference))
@@ -132,7 +135,7 @@
          c (async/chan)]
      (.then (.get ref)
             (fn [doc]
-              (->> (.data doc) clojurify (async/put! c))
+              (some->> (.data doc) clojurify (async/put! c))
               (async/close! c)))
      c)))
 
