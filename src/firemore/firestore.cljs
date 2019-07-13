@@ -18,7 +18,7 @@
 
 (defn ref [fb path]
   (let [a (-> fb db atom)]
-    (loop [[[col doc] & rs] path]
+    (loop [[col doc & rs] path]
       (reset! a (.collection @a col))
       (when (some? doc)
         (reset! a (.doc @a doc)))
