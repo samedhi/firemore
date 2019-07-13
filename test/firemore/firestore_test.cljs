@@ -39,8 +39,8 @@
     (t/async
      done
      (async/go
-       (t/is (nil? (async/<! (sut/set-db! sut/FB reference m))))
-       (t/is (= m (async/<! (sut/get-db sut/FB reference))))
+       (t/is (nil? (async/<! (sut/set-db! reference m))))
+       (t/is (= m (async/<! (sut/get-db reference))))
        (done)))))
 
 (t/deftest get-and-add-test
@@ -49,9 +49,9 @@
     (t/async
      done
      (async/go
-       (let [{:keys [id]} (async/<! (sut/add-db! sut/FB reference m))]
+       (let [{:keys [id]} (async/<! (sut/add-db! reference m))]
          (t/is (some? id))
-         (t/is (= m (async/<! (sut/get-db sut/FB (conj reference id)))))
+         (t/is (= m (async/<! (sut/get-db (conj reference id)))))
          (done))))))
 
 

@@ -80,62 +80,74 @@
     (shared-db fb reference)
     {:js-value (-> value replace-timestamp jsonify)})))
 
-(defn set-db! [fb reference value]
-  (let [{:keys [id ref js-value]} (shared-db fb reference value)
-        c (async/chan)]
-    (..
-     (.set ref js-value)
-     (then
-      (fn [docRef]
-        (async/close! c)))
-     (catch
-         (fn [error]
-           (async/put! c error)
-           (async/close! c))))
-    c))
+(defn set-db!
+  ([reference value] (set-db! FB reference value))
+  ([fb reference value]
+   (let [{:keys [id ref js-value]} (shared-db fb reference value)
+         c (async/chan)]
+     (..
+      (.set ref js-value)
+      (then
+       (fn [docRef]
+         (async/close! c)))
+      (catch
+          (fn [error]
+            (async/put! c error)
+            (async/close! c))))
+     c)))
 
-(defn add-db! [fb reference value]
-  (let [{:keys [id ref js-value]} (shared-db fb reference value)
-        c (async/chan)]
-    (..
-     (.add ref js-value)
-     (then
-      (fn [docRef]
-        (async/put! c {:id (.-id docRef)})
-        (async/close! c)))
-     (catch
-         (fn [error]
-           (async/put! c error)
-           (async/close! c))))
-    c))
+(defn add-db!
+  ([reference value] (add-db! FB reference value))
+  ([fb reference value]
+   (let [{:keys [id ref js-value]} (shared-db fb reference value)
+         c (async/chan)]
+     (..
+      (.add ref js-value)
+      (then
+       (fn [docRef]
+         (async/put! c {:id (.-id docRef)})
+         (async/close! c)))
+      (catch
+          (fn [error]
+            (async/put! c error)
+            (async/close! c))))
+     c)))
 
-(defn update-db! [fb reference value]
-  (let [{:keys [ref js-value]} (shared-db fb reference value)]
-    (.update ref js-value)))
+(defn update-db!
+  ([reference value] (update-db! FB reference value))
+  ([fb reference value]
+   (let [{:keys [ref js-value]} (shared-db fb reference value)]
+     (.update ref js-value))))
 
-(defn delete-db! [fb reference]
-  (let [{:keys [ref]} (shared-db fb reference nil)]
-    (.delete ref)))
+(defn delete-db!
+  ([reference] (delete-db! FB reference))
+  ([fb reference]
+   (let [{:keys [ref]} (shared-db fb reference nil)]
+     (.delete ref))))
 
-(defn get-db [fb reference]
-  (let [{:keys [ref]} (shared-db fb reference nil)
-        c (async/chan)]
-    (.then (.get ref)
-           (fn [doc]
-             (->> (.data doc) clojurify (async/put! c))
-             (async/close! c)))
-    c))
+(defn get-db
+  ([reference] (get-db FB reference))
+  ([fb reference]
+   (let [{:keys [ref]} (shared-db fb reference nil)
+         c (async/chan)]
+     (.then (.get ref)
+            (fn [doc]
+              (->> (.data doc) clojurify (async/put! c))
+              (async/close! c)))
+     c)))
 
-(defn listen-db [fb reference]
-  (let [{:keys [ref]} (shared-db fb reference nil)
-        c (async/chan)
-        unsubscribe (atom nil)
-        fx (fn [doc]
-             (let [data (clojurify (.data doc))]
-               (when-not (true? (async/put! c data))
-                 (@unsubscribe))))]
-    (reset! unsubscribe (.onSnapshot ref fx))
-    {:chan c :unsubscribe @unsubscribe}))
+(defn listen-db
+  ([reference] (listen-db FB reference))
+  ([fb reference]
+   (let [{:keys [ref]} (shared-db fb reference nil)
+         c (async/chan)
+         unsubscribe (atom nil)
+         fx (fn [doc]
+              (let [data (clojurify (.data doc))]
+                (when-not (true? (async/put! c data))
+                  (@unsubscribe))))]
+     (reset! unsubscribe (.onSnapshot ref fx))
+     {:chan c :unsubscribe @unsubscribe})))
 
 (defn unlisten-db [{:keys [chan unsubscribe]}]
   (unsubscribe)
