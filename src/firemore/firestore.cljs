@@ -82,18 +82,25 @@
     (shared-db fb reference)
     {:js-value (-> value replace-timestamp jsonify)})))
 
-(defn promise->chan [fx]
-  (let [c (async/chan)]
-    (..
-     (fx)
-     (then
-      (fn [docRef]
-        (async/close! c)))
-     (catch
-         (fn [error]
-           (async/put! c error)
-           (async/close! c))))
-    c))
+(defn promise->chan
+  ([fx]
+   (promise->chan
+    fx
+    (fn [c] (async/close! c))))
+  ([fx on-success]
+   (promise->chan
+    fx
+    on-success
+    (fn [c error]
+      (async/put! c error)
+      (async/close! c))))
+  ([fx on-success on-failure]
+   (let [c (async/chan)]
+     (..
+      (fx)
+      (then (partial on-success c))
+      (catch (partial on-failure c)))
+     c)))
 
 (defn set-db!
   ([reference value] (set-db! FB reference value))
@@ -104,19 +111,12 @@
 (defn add-db!
   ([reference value] (add-db! FB reference value))
   ([fb reference value]
-   (let [{:keys [id ref js-value]} (shared-db fb reference value)
-         c (async/chan)]
-     (..
-      (.add ref js-value)
-      (then
-       (fn [docRef]
-         (async/put! c {:id (.-id docRef)})
-         (async/close! c)))
-      (catch
-          (fn [error]
-            (async/put! c error)
-            (async/close! c))))
-     c)))
+   (let [{:keys [id ref js-value]} (shared-db fb reference value)]
+     (promise->chan 
+      #(.add ref js-value)
+      (fn [c docRef]
+        (async/put! c {:id (.-id docRef)})
+        (async/close! c))))))
 
 (defn update-db!
   ([reference value] (update-db! FB reference value))
@@ -133,19 +133,12 @@
 (defn get-db
   ([reference] (get-db FB reference))
   ([fb reference]
-   (let [{:keys [ref]} (shared-db fb reference nil)
-         c (async/chan)]
-     (..
-      (.get ref)
-      (then
-       (fn [doc]
-         (->> (.data doc) clojurify (async/put! c))
-         (async/close! c)))
-      (catch
-          (fn [error]
-            (async/put! c error)
-            (async/close! c))))
-     c)))
+   (let [{:keys [ref]} (shared-db fb reference nil)]
+     (promise->chan
+      #(.get ref)
+      (fn [c doc]
+        (->> (.data doc) clojurify (async/put! c))
+        (async/close! c))))))
 
 (defn listen-db
   ([reference] (listen-db FB reference))
