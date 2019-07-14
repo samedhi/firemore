@@ -1,21 +1,34 @@
 (ns firemore.core
   (:require
-   [cljs.test :as test]))
+   [firemore.config :as config]
+   [firemore.firestore :as firestore]))
 
 ;; interop
 
+(def supported-types [string? int? float? boolean? nil? inst?])
+
+(defn throw-if-unsupported [m]
+  (some->> m
+           vals
+           (remove (fn [v] (some #(% v) supported-types)))
+           first
+           (ex-info "Unsupported Data")
+           throw)
+  m)
+
 (defn fire->clj
-  "Returns the clojure form of the `js-object` document from Firestore.
-  `opts` allows you to modify the conversion."
-  ([js-object] (fire->clj js-object {}))
-  ([js-object opts]))
+  "Returns the clojure form of the `js-object` document from Firestore."
+  [js-object]
+  (-> js-object
+      firestore/clojurify
+      throw-if-unsupported))
 
 (defn clj->fire
-  "Returns a javascript object from the firemore `document` (a map).
-
-  `opts` allows you to modify the conversion."
-  ([document] (clj->fire document {}))
-  ([document opts]))
+  "Returns a javascript object from the firemore `document` (a map)."
+  ([document]
+   (-> document
+       throw-if-unsupported
+       firestore/jsonify)))
 
 ;; database
 
