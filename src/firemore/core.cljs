@@ -90,7 +90,8 @@
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference document])
+  [reference document]
+  (-> reference ref (firestore/set-db! document)))
 
 (defn merge!
   "Merges `document` into the document at `reference` within the Firestore database.
@@ -103,7 +104,8 @@
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference document])
+  [reference document]
+  (-> reference ref (firestore/update-db! document)))
 
 (defn delete!
   "Deletes the document at `reference` within the Firestore database.
@@ -115,7 +117,8 @@
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference])
+  [reference]
+  (-> reference ref firestore/delete-db!)
 
 ;; authentication
 
