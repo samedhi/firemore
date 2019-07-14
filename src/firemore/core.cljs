@@ -61,7 +61,13 @@
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference])
+  [reference]
+  (let [{:keys [chan unsubscribe]} (-> reference ref firestore/listen-db)
+        opts {:on-close #(do (async/close! chan) (unsubscribe))}
+        buffer (finalizing-buffer/create 1 opts)
+        finalizing-chan (async/chan buffer)]
+    (-> chan async/mult (tap finalizing-chan))
+    finalizing-chan))
 
 (defn write!
   "Writes the `document` to `reference` within the Firestore database.
