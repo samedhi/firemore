@@ -1,6 +1,8 @@
 (ns firemore.core
   (:require
+   [cljs.core.async :as async]
    [firemore.config :as config]
+   [firemore.finalizing-buffer finalizing-buffer]
    [firemore.firestore :as firestore]))
 
 ;; interop
@@ -30,6 +32,13 @@
        throw-if-unsupported
        firestore/jsonify)))
 
+;; references
+
+(defn ref [ks]
+  (->> ks
+       (mapv name)
+       firestore/ref))
+
 ;; database
 
 (defn grab
@@ -43,7 +52,8 @@
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference] )
+  [reference]
+  (-> reference ref firestore/get-db))
 
 (defn watch
   "Watch the document at `reference` in the Firestore database.

@@ -16,14 +16,16 @@
 (defn db [firebase]
   (.firestore firebase))
 
-(defn ref [fb path]
-  (let [a (-> fb db atom)]
-    (loop [[col doc & rs] path]
-      (reset! a (.collection @a col))
-      (when (some? doc)
-        (reset! a (.doc @a doc)))
-      (when (some? rs) (recur rs)))
-    @a))
+(defn ref
+  ([path] (ref FB path))
+  ([fb path]
+   (let [a (-> fb db atom)]
+     (loop [[col doc & rs] path]
+       (reset! a (.collection @a col))
+       (when (some? doc)
+         (reset! a (.doc @a doc)))
+       (when (some? rs) (recur rs)))
+     @a)))
 
 (defn str->keywordize
   {:pre [(string? s)]}
