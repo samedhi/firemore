@@ -49,7 +49,7 @@
      #(assoc %1 (str->keywordize %2) %3)
      {}
      (js->clj json-document))
-    config/UNDEFINED))
+    config/NO_DOCUMENT))
 
 (defn replace-timestamp [m]
   (reduce-kv

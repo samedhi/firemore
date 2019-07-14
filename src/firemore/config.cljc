@@ -23,4 +23,4 @@
 
 (def TIMESTAMP :firemore/timestamp)
 
-(def UNDEFINED :firemore/undefined)
+(def NO_DOCUMENT :firemore/no-document)
