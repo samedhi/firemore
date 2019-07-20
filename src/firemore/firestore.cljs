@@ -2,24 +2,17 @@
   (:require
    [cljs.core.async :as async]
    [clojure.string :as string]
-   [firemore.config :as config])
+   [firemore.config :as config]
+   [firemore.firebase :as firebase])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
-(def OPTS
-  #js {:apiKey  config/FIREBASE_API_KEY
-       :authDomain config/FIREBASE_AUTH_DOMAIN
-       :projectId config/FIREBASE_PROJECT_ID})
-
-(defonce FB (js/firebase.initializeApp OPTS))
-
-(defn db [firebase]
-  (.firestore firebase))
+(def FB firebase/FB)
 
 (defn ref
   ([path] (ref FB path))
   ([fb path]
-   (let [a (-> fb db atom)]
+   (let [a (-> fb firebase/db atom)]
      (loop [[col doc & rs] path]
        (reset! a (.collection @a col))
        (when (some? doc)
@@ -33,7 +26,7 @@
   (if (= (subs s 0 1) ":")
     (as-> s $
       (subs $ 1)
-      (string/split $ "/") 
+      (string/split $ "/")
       (apply keyword $))
     s))
 

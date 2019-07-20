@@ -6,10 +6,6 @@
    [firemore.firestore :as sut]
    [cljs.test :as test]))
 
-(t/deftest fundamentals-test
-  (t/is (some? sut/OPTS))
-  (t/is (some? sut/FB))
-  (t/is (some? (sut/db sut/FB))))
 
 (t/deftest keywordizing-test
   (t/are [k s] (= (sut/keywordize->str k) s)

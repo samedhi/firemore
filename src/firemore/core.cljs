@@ -2,6 +2,7 @@
   (:require
    [cljs.core.async :as async]
    [firemore.config :as config]
+   [firemore.authentication :as authentication]
    [firemore.finalizing-buffer :as finalizing-buffer]
    [firemore.firestore :as firestore]))
 
