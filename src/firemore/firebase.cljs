@@ -11,3 +11,6 @@
 
 (defn db [firebase]
   (.firestore firebase))
+
+(defn auth [firebase]
+  (.auth firebase))

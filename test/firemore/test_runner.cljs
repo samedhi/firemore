@@ -2,6 +2,7 @@
   (:require
    [cljs.test :as t :include-macros true]
    [cljs-test-display.core]
+   [firemore.authentication-test]
    [firemore.core-test]
    [firemore.firebase-test]
    [firemore.firestore-test]))
@@ -11,6 +12,7 @@
 (defn test-run []
   (t/run-tests
    (cljs-test-display.core/init! "test")
+   'firemore.authentication-test
    'firemore.core-test
    'firemore.firebase-test
    'firemore.firestore-test
