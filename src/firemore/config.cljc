@@ -1,6 +1,6 @@
 (ns firemore.config)
 
-(def FIREBASE_API_KEY "AIzaSyAtHFVyehvlWQoRHi2bceLLqGHIJVxOczs")
+(def FIREBASE_API_KEY "AIzaSyAEEGdlXMkrxbF-OWbsDffCSKMogeiRvfA")
 
 (def FIREBASE_PROJECT_ID "inferno-8d188")
 
