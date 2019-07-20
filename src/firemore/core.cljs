@@ -137,8 +137,9 @@
   []
   authentication/user-chan)
 
-(defn user []
+(defn user
   "Returns the last value returned from user-chan."
+  []
   @authentication/user-atom)
 
 
