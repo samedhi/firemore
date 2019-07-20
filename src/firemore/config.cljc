@@ -24,3 +24,5 @@
 (def TIMESTAMP :firemore/timestamp)
 
 (def NO_DOCUMENT :firemore/no-document)
+
+(def NO_USER :firemore/no-user)

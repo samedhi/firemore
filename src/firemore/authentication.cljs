@@ -1,28 +1,33 @@
 (ns firemore.authentication
   (:require
-   [firemore.firebase :as firebase]))
+   [cljs.core.async :as async]
+   [firemore.firebase :as firebase]
+   [firemore.config :as config])
+  (:require-macros
+   [cljs.core.async.macros :refer [go-loop go]]))
 
 (enable-console-print!)
 
 (def FB firebase/FB)
 
-(def user (atom nil))
+(def user-chan (async/chan (async/sliding-buffer 1)))
+
+(def user-atom (atom config/no-user))
+
+(add-watch user-atom
+           :value-change
+           (fn [_ _ _ new] (async/put! user-chan new)))
 
 (defn user-change-handler [js-user]
-  (reset! user
-          (when js-user
-            {:anonymous? (.-isAnonymous js-user)
-             :uid        (.-uid js-user)})))
-
-(add-watch user
-           :user-change
-           (fn [_ _ _ n]
-             (if n
-               (println "User is signed in as" (:uid n) ".")
-               (println "User is signed out."))))
+  (reset!
+   user-atom
+   (when js-user
+     {:anonymous? (.-isAnonymous js-user)
+      :uid        (.-uid js-user)}
+     config/NO_USER)))
 
 (-> FB firebase/auth (.onAuthStateChanged user-change-handler))
 
-(defn anonymous-login!
-  ([] (anonymous-login! FB))
+(defn login-anonymously!
+  ([] (login-anonymously! FB))
   ([fb] (.signInAnonymously (firebase/auth fb))))

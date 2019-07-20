@@ -5,15 +5,12 @@
    [cljs.test :as t :include-macros true]
    [clojure.string :as string]))
 
-(t/deftest anonymous-login!-test
+(t/deftest login-anonymously!-test
   (t/async
    done
-   (t/is (some? (sut/anonymous-login!)))
-   (async/go-loop []
-     (if-let [m @sut/user]
-       (do
-         (t/is (-> m :uid (complement string/blank?)))
-         (done))
-       (do
-         (async/<! (async/timeout 100))
-         (recur))))))
+   (async/go
+     (t/is (some? (sut/login-anonymously!)))
+     (let [m (async/<! sut/user-chan)]
+       (t/is (-> m :uid (complement string/blank?)))
+       (t/is (= m @sut/user-atom))
+       (done)))))

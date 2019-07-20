@@ -4,7 +4,8 @@
    [firemore.config :as config]
    [firemore.authentication :as authentication]
    [firemore.finalizing-buffer :as finalizing-buffer]
-   [firemore.firestore :as firestore]))
+   [firemore.firestore :as firestore]
+   [firemore.firebase :as firebase]))
 
 ;; interop
 
@@ -123,29 +124,32 @@
 
 ;; authentication
 
-(defn get-user
-  "Returns a channel. Will put! user map or :firemore/logged-out as user state changes.
+(defn user-chan
+  "Returns a channel. Will put! user map or :firemore/no-user as user state changes..
 
-  Returns a channel. puts! :firemore/logged-out when client is not logged into Firestore.
-  Atom will contain a user map when client is logged in to Firestore. User map has the
-  following form:
-
-  {:uid <application_unique_id>
-  :email <user_email_address>
-  :name <user_identifier>
-  :photo <url_to_a_photo_for_this_user>}
+    {:uid <application_unique_id>
+   :email <user_email_address>
+   :name <user_identifier>
+   :photo <url_to_a_photo_for_this_user>}
 
   Note: :uid will always be present. :email, :name, :photo may be present depending
   on sign-in provider and/or whether you have set their values."
-  [])
+  []
+  authentication/user-chan)
+
+(defn user []
+  "Returns the last value returned from user-chan."
+  @authentication/user-atom)
+
 
 (defn logout!
-  "Log out the currently logged in user (if any).o"
+  "Log out the currently logged in user (if any)."
   [])
 
-(defn login-as-anonymous!
+(defn login-anonymously!
   "Log out any existing user, then log in a new anonymous user."
-  [])
+  []
+  authentication/login-anonymously!)
 
 (defn delete-user!
   "Deletes the currently logged in user from Firestore.
