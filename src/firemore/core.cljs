@@ -5,7 +5,11 @@
    [firemore.authentication :as authentication]
    [firemore.finalizing-buffer :as finalizing-buffer]
    [firemore.firestore :as firestore]
-   [firemore.firebase :as firebase]))
+   [firemore.firebase :as firebase])
+  (:require-macros
+   [cljs.core.async.macros :refer [go-loop go]]))
+
+(enable-console-print!)
 
 ;; interop
 
@@ -142,15 +146,38 @@
   []
   @authentication/user-atom)
 
-
-(defn logout!
-  "Log out the currently logged in user (if any)."
-  [])
-
 (defn login-anonymously!
   "Log out any existing user, then log in a new anonymous user."
   []
-  authentication/login-anonymously!)
+  (authentication/login-anonymously!))
+
+(defn uid []
+  "Returns a channel that will have a uid put! upon it'
+
+  If you are currently logged in, uid will be the uid of the currently logged
+  in user. If you are not currently logged in, client will login with the
+  anonymous user, and then the uid will be the uid of the anonymous user.
+
+  Note:
+  channel -> `clojure.core.async/chan`
+  put!    -> `clojure.core.async/put!`"
+  (let [c (async/chan)]
+    (if-let [uid (:uid (user))]
+      (async/put! c uid)
+      (go
+        (login-anonymously!)
+        (loop []
+          (if-let [uid (:uid (user))] 
+            (async/put! c uid)
+            (do
+              (async/<! (async/timeout 100))
+              (recur))))))
+    c))
+
+(defn logout!
+  "Log out the currently logged in user (if any)."
+  []
+  )
 
 (defn delete-user!
   "Deletes the currently logged in user from Firestore.
