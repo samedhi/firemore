@@ -77,19 +77,20 @@
        (done)))))
 
 (t/deftest listening-test
-  (t/async
-   done
-   (async/go
-     (let [reference ["test" "listening-test"]
-           {:keys [chan unsubscribe]} (sut/listen-db reference)
-           m1 {:string "listening-test-1"}
-           m2 {:string "listening-test-2"}]
-       (t/is (= config/NO_DOCUMENT (async/<! chan)))
-       (t/is (nil?                 (async/<! (sut/set-db! reference m1))))
-       (t/is (= m1                 (async/<! chan)))
-       (t/is (nil?                 (async/<! (sut/set-db! reference m2))))
-       (t/is (= m2                 (async/<! chan)))
-       (t/is (nil?                 (async/<! (sut/delete-db! reference))))
-       (t/is (= config/NO_DOCUMENT (async/<! chan)))
-       (unsubscribe)
-       (done)))))
+  (let [reference ["test" "listening-test"]]
+    (t/async
+     done
+     (async/go
+       (async/<! (sut/delete-db! reference))
+       (let [{:keys [chan unsubscribe]} (sut/listen-db reference)
+             m1 {:string "listening-test-1"}
+             m2 {:string "listening-test-2"}]
+         (t/is (= config/NO_DOCUMENT (async/<! chan)))
+         (t/is (nil?                 (async/<! (sut/set-db! reference m1))))
+         (t/is (= m1                 (async/<! chan)))
+         (t/is (nil?                 (async/<! (sut/set-db! reference m2))))
+         (t/is (= m2                 (async/<! chan)))
+         (t/is (nil?                 (async/<! (sut/delete-db! reference))))
+         (t/is (= config/NO_DOCUMENT (async/<! chan)))
+         (unsubscribe)
+         (done))))))
