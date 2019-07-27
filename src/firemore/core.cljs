@@ -6,6 +6,7 @@
    [firemore.finalizing-buffer :as finalizing-buffer]
    [firemore.firestore :as firestore]
    [firemore.firebase :as firebase])
+  (:refer-clojure :exclude [get])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
@@ -47,7 +48,7 @@
 
 ;; database
 
-(defn grab
+(defn get
   "Get the document at `reference` in the Firestore database.
 
   Returns a channel. If a document exist at `reference`, it will be put! upon the
