@@ -43,8 +43,7 @@
 
 (defn ref [ks]
   (->> ks
-       (mapv name)
-       firestore/ref))
+       (mapv name)))
 
 ;; database
 
