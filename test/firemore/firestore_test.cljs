@@ -30,6 +30,17 @@
                 (->  sut/replace-timestamp :a)))
     (t/is (some? (-> m sut/replace-timestamp :a)))))
 
+(t/deftest expand-query-test
+  (t/are [input-query output-query] (= output-query (sut/expand-query input-query))
+    {}
+    {}
+
+    {:where ["population" "<" 10000]}
+    {:where [["population" "<" 10000]]}
+
+    {:order ["population" ["state" "desc"]]}
+    {:order [["population" "asc"] ["state" "desc"]]}))
+
 (t/deftest get-and-set-test
   (let [reference ["test" "get-and-set-test"]
         m {:string "get-and-set-test"}]
@@ -41,15 +52,15 @@
        (done)))))
 
 (t/deftest get-and-add-test
-  (t/async
-   done
-   (async/go
-     (let [reference ["test"]
-           m {:string "get-and-add-test"}
-           {:keys [id]} (async/<! (sut/add-db! reference m))]
-       (t/is (some? id))
-       (t/is (= m (async/<! (sut/get-db (conj reference id)))))
-       (done)))))
+  (let [reference ["test"]
+        m {:string "get-and-add-test"}]
+    (t/async
+     done
+     (async/go
+       (let [{:keys [id]} (async/<! (sut/add-db! reference m))]
+         (t/is (some? id))
+         (t/is (= m (async/<! (sut/get-db (conj reference id)))))
+         (done))))))
 
 (t/deftest delete-test
   (t/async

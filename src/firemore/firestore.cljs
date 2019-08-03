@@ -63,15 +63,40 @@
    (when (-> path count even?)
      {:id (peek path)})))
 
+(defn expand-where [where]
+  (when where
+    (let [[expression-1] where]
+      (when-not (vector? expression-1)
+        {:where [where]}))))
+
+(defn convert-if-string [order-expression]
+  (if (string? order-expression)
+    [order-expression "asc"]
+    order-expression))
+
+(defn expand-order [order]
+  (when order
+    {:order (mapv convert-if-string order)}))
+
+(defn expand-query [query]
+  (let [{:keys [where order limit start-at start-after end-at end-before]} query]
+    (merge
+     query
+     (expand-where where)
+     (expand-order order))))
+
 (defn build-query [fb path query]
-  (throw (js/Error "Haven't implemented this!")))
+  (merge
+   (build-path fb path)
+   {:query (expand-query query)}))
 
 (defn shared-db
   ([fb reference]
    {:pre [(vector? reference)]}
-   (if (-> reference peek map?)
-     (build-query fb (pop reference) (peek reference))
-     (build-path fb reference)))
+   (cond
+     (-> reference peek map?) (build-query fb (pop reference) (peek reference))
+     (-> reference count odd?) (build-query fb reference {})
+     :else (build-path fb reference)))
   ([fb reference value]
    (merge
     (shared-db fb reference)
@@ -107,7 +132,7 @@
   ([reference value] (add-db! FB reference value))
   ([fb reference value]
    (let [{:keys [id ref js-value]} (shared-db fb reference value)]
-     (promise->chan 
+     (promise->chan
       #(.add ref js-value)
       (fn [c docRef]
         (async/put! c {:id (.-id docRef)})
