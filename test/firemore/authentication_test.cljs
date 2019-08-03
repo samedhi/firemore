@@ -8,9 +8,10 @@
 (t/deftest login-anonymously!-test
   (t/async
    done
-   (async/go
-     (t/is (some? (sut/login-anonymously!)))
-     (let [m (async/<! sut/user-chan)]
-       (t/is (-> m :uid (complement string/blank?)))
-       (t/is (= m @sut/user-atom))
-       (done)))))
+   (let [not-blank? (complement string/blank?)]
+     (async/go
+       (t/is (some? (sut/login-anonymously!)))
+       (let [m (async/<! sut/user-chan)]
+         (t/is (-> m :uid not-blank?))
+         (t/is (= m @sut/user-atom))
+         (done))))))
