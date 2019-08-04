@@ -14,11 +14,13 @@
                  [ring-server "0.5.0"]
                  [figwheel-sidecar "0.5.18"]]
   :plugins [[lein-cljsbuild "1.1.6"]
+            [lein-codox "0.10.7"]
             [lein-doo "0.1.10"]
             [lein-figwheel "0.5.13"]
             [lein-ring "0.12.5"]]
   :source-paths ["src"]
   :clean-targets ^{:protect false} ["resource/public/js"]
+  :codox {:language :clojurescript}
   :cljsbuild {:builds
               [{:id "dev"
                 :figwheel true
