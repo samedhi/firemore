@@ -150,15 +150,45 @@
    (let [{:keys [ref]} (shared-db fb reference nil)]
      (promise->chan #(.delete ref)))))
 
+(defn add-where-to-ref [ref query]
+  (reduce
+   (fn [ref [k op v]] (.where k op v))
+   ref
+   (:where query)))
+
+(defn add-order-to-ref [ref query]
+  (reduce
+   (fn [ref [k direction]] (.orderBy ref k direction))
+   ref
+   (:order query)))
+
+(defn add-limit-to-ref [ref query]
+  (if-let [limit (:limit query)]
+    (.limit ref limit)
+    ref))
+
+(defn filter-by-query [ref query]
+  (->> ref
+       (add-where-to-ref query)
+       (add-order-to-ref query)
+       (add-limit-to-ref query)))
+
 (defn get-db
   ([reference] (get-db FB reference))
   ([fb reference]
-   (let [{:keys [ref]} (shared-db fb reference nil)]
-     (promise->chan
-      #(.get ref)
-      (fn [c doc]
-        (->> (.data doc) clojurify (async/put! c))
-        (async/close! c))))))
+   (let [{:keys [ref query]} (shared-db fb reference nil)]
+     (if query
+       ;; TODO: This is where it needs to do something if you are a query
+       (promise->chan
+        #(.get ref (if query ref (filter-by-query ref query)))
+        (fn [c doc]
+          (->> (.data doc) clojurify (async/put! c))
+          (async/close! c)))
+       (promise->chan
+        #(.get ref)
+        (fn [c doc]
+          (->> (.data doc) clojurify (async/put! c))
+          (async/close! c)))))))
 
 (defn listen-db
   ([reference] (listen-db FB reference))

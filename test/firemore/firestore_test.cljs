@@ -105,3 +105,26 @@
          (t/is (= config/NO_DOCUMENT (async/<! chan)))
          (unsubscribe)
          (done))))))
+
+(def query-fixture
+  {"SF" {:name "San Francisco" :state "CA" :country "USA" :capital false :population 860000}
+   "LA"  {:name "Los Angeles" :state "CA" :country "USA" :capital false :population 3900000}
+   "DC"  {:name "Washington, D.C." :state nil :country "USA" :capital false :population 680000}
+   "TOK" {:name "Tokyo" :state nil :country "Japan" :capital false :population 9000000000}
+   "BJ"  {:name "Beijing" :state nil :country "China" :capital false :population 21500000}})
+
+(defn write-fixture [fixture]
+  (doseq [[k v] fixture]
+    (sut/set-db! ["cities" k] v)))
+
+;; The fixture data is never modified. This only needs to be written once...
+#_(write-fixture query-fixture)
+
+;; confirm fixtures are written
+#_(async/go (println (async/<! (sut/get-db ["cities" "BJ"]))))
+
+(t/deftest watch-collection-test
+  (t/async
+   done
+   (async/go
+     (async/<! (sut/get-db [:cities])))))
