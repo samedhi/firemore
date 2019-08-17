@@ -107,11 +107,31 @@
          (done))))))
 
 (def query-fixture
-  {"SF" {:name "San Francisco" :state "CA" :country "USA" :capital false :population 860000}
-   "LA"  {:name "Los Angeles" :state "CA" :country "USA" :capital false :population 3900000}
-   "DC"  {:name "Washington, D.C." :state nil :country "USA" :capital false :population 680000}
-   "TOK" {:name "Tokyo" :state nil :country "Japan" :capital false :population 9000000000}
-   "BJ"  {:name "Beijing" :state nil :country "China" :capital false :population 21500000}})
+  {"SF" {:name "San Francisco"
+         :state "CA"
+         :country "USA"
+         :capital false
+         :population 860000}
+   "LA"  {:name "Los Angeles"
+          :state "CA"
+          :country "USA"
+          :capital false
+          :population 3900000}
+   "DC"  {:name "Washington, D.C."
+          :state nil
+          :country "USA"
+          :capital false
+          :population 680000}
+   "TOK" {:name "Tokyo"
+          :state nil
+          :country "Japan"
+          :capital false
+          :population 9000000000}
+   "BJ"  {:name "Beijing"
+          :state nil
+          :country "China"
+          :capital false
+          :population 21500000}})
 
 (defn write-fixture [fixture]
   (doseq [[k v] fixture]
@@ -121,10 +141,29 @@
 #_(write-fixture query-fixture)
 
 ;; confirm fixtures are written
-#_(async/go (println (async/<! (sut/get-db ["cities" "BJ"]))))
+#_(async/go (println (async/<! (sut/get-db ["cities"]))))
+
+(defn grab-all [c]
+  (let [c2 (async/chan)]
+    (async/go-loop [acc []]
+      (if-let [m (async/<! c)]
+        (recur (conj acc m))
+        (do (async/put! c2 acc)
+            (async/close! c2))))
+    c2))
+
+(t/deftest get-collection-test
+  (t/async
+   done
+   (async/go
+     (let [ms (async/<! (grab-all (sut/get-db ["cities"])))]
+       (t/is (= (count ms) 5))
+       (t/is (set (map :name ms) (set (map :name query-fixture))))
+       (done)))))
 
 (t/deftest watch-collection-test
   (t/async
    done
    (async/go
-     (async/<! (sut/get-db [:cities])))))
+     (async/<! (sut/get-db ["cities"]))
+     (done))))

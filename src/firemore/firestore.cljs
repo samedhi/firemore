@@ -168,21 +168,24 @@
     ref))
 
 (defn filter-by-query [ref query]
-  (->> ref
-       (add-where-to-ref query)
-       (add-order-to-ref query)
-       (add-limit-to-ref query)))
+  (doto ref
+    (add-where-to-ref query)
+    (add-order-to-ref query)
+    (add-limit-to-ref query)))
 
 (defn get-db
-  ([reference] (get-db FB reference))
+  ([reference]
+   (get-db FB reference))
   ([fb reference]
-   (let [{:keys [ref query]} (shared-db fb reference nil)]
+   (let [{:keys [ref query]} (shared-db fb reference)]
      (if query
-       ;; TODO: This is where it needs to do something if you are a query
        (promise->chan
-        #(.get ref (if query ref (filter-by-query ref query)))
-        (fn [c doc]
-          (->> (.data doc) clojurify (async/put! c))
+        #(.get (filter-by-query ref query))
+        (fn [c querySnapshot]
+          (.forEach
+           querySnapshot
+           (fn [doc]
+             (->> (.data doc) clojurify (async/put! c))))
           (async/close! c)))
        (promise->chan
         #(.get ref)
@@ -190,10 +193,16 @@
           (->> (.data doc) clojurify (async/put! c))
           (async/close! c)))))))
 
+#_(async/go (let [c (get-db ["cities"])]
+              (loop []
+                (when-let [m (async/<! c)]
+                  (println (pr-str m))
+                  (recur)))))
+
 (defn listen-db
   ([reference] (listen-db FB reference))
   ([fb reference]
-   (let [{:keys [ref]} (shared-db fb reference nil)
+   (let [{:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
          fx (fn [document]
               (let [json-data (.data document)
