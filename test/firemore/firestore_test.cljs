@@ -68,10 +68,10 @@
    (async/go
      (let [reference ["test" "delete-me"]
            m {:string "delete-test"}]
-       (t/is (nil?                 (async/<! (sut/set-db! reference m))))
-       (t/is (= m                  (async/<! (sut/get-db reference))))
-       (t/is (nil?                 (async/<! (sut/delete-db! reference))))
-       (t/is (= config/NO_DOCUMENT (async/<! (sut/get-db reference))))
+       (t/is (nil? (async/<! (sut/set-db! reference m))))
+       (t/is (= m  (async/<! (sut/get-db reference))))
+       (t/is (nil? (async/<! (sut/delete-db! reference))))
+       (t/is (= {} (async/<! (sut/get-db reference))))
        (done)))))
 
 (t/deftest update-test
@@ -161,9 +161,37 @@
        (t/is (set (map :name ms) (set (map :name query-fixture))))
        (done)))))
 
-(t/deftest watch-collection-test
+(def test-city {:name "testacles" :population 1})
+
+#_(t/deftest watch-collection-test
   (t/async
    done
    (async/go
-     (async/<! (sut/get-db ["cities"]))
-     (done))))
+     ;; Clear out the TEST city in case it is still there
+     (async/<! (sut/delete-db! ["cities" "TEST"]))
+     (let [c (sut/get-db ["cities"])
+           cities (loop [acc []]
+                    (let [new-acc (conj acc (async/<! c))]
+                      (if (-> new-acc count (= 5))
+                        new-acc
+                        (recur new-acc))))]
+       ;; Exhaust out all the standard cities
+       (t/is (set (map :name ms) (set (map :name query-fixture))))
+       ;; Add in one additional city
+       (async/<! (sut/set-db! ["cities" "TEST"] test-city))
+       ;; Confirm that we see additional city
+       (t/is (= test-city (async/<! c)))
+       ;; Change population of TEST city
+       (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
+       ;; Confirm that we see change to TEST city
+       (t/is (= test-city (async/<! c)))
+       ;; Delete TEST city
+       (async/<! (sut/delete-db! ["cities" "TEST"]))
+       ;; Confirm deletion  (empty map means deleted).
+       (t/is (= config/NO_DOCUMENT (async/<! c))))
+     (done)
+     )
+   ))
+
+
+(async/go (println (async/<! (sut/delete-db! ["cities" "TEST"]))))
