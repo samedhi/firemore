@@ -86,25 +86,6 @@
        (t/is (= (merge m1 m2) (async/<! (sut/get-db reference))))
        (done)))))
 
-(t/deftest listening-test
-  (let [reference ["test" "listening-test"]]
-    (t/async
-     done
-     (async/go
-       (async/<! (sut/delete-db! reference))
-       (let [{:keys [c unsubscribe]} (sut/listen-db reference)
-             m1 {:string "listening-test-1"}
-             m2 {:string "listening-test-2"}]
-         (t/is (= config/NO_DOCUMENT (async/<! c)))
-         (t/is (nil?                 (async/<! (sut/set-db! reference m1))))
-         (t/is (= m1                 (async/<! c)))
-         (t/is (nil?                 (async/<! (sut/set-db! reference m2))))
-         (t/is (= m2                 (async/<! c)))
-         (t/is (nil?                 (async/<! (sut/delete-db! reference))))
-         (t/is (= config/NO_DOCUMENT (async/<! c)))
-         (unsubscribe)
-         (done))))))
-
 (def query-fixture
   {"SF" {:name "San Francisco"
          :state "CA"
@@ -141,6 +122,35 @@
 
 ;; confirm fixtures are written
 #_(async/go (println (async/<! (sut/get-db ["cities"]))))
+
+(t/deftest listening-test
+  (let [reference ["test" "listening-test"]]
+    (t/async
+     done
+     (async/go
+       (async/<! (sut/delete-db! reference))
+       (let [{:keys [c unsubscribe]} (sut/listen-db reference)
+             m1                      {:string "listening-test-1"}
+             m2                      {:string "listening-test-2"}]
+         (t/is (= config/NO_DOCUMENT (async/<! c)))
+         ;; Confirm that the document shows up at all
+         (t/is (nil?                 (async/<! (sut/set-db! reference m1))))
+         (t/is (= m1                 (async/<! c)))
+         (t/is (= m1                 (async/<! c)))
+
+         ;; Confirm that first is :pending? true, then server confirms and :pending? false
+         (t/is (nil?                 (async/<! (sut/set-db! reference m2))))
+         (t/is (true?                (-> (async/<! c) meta :pending?)))
+         (t/is (false?               (-> (async/<! c) meta :pending?)))
+
+         ;; This is a bit surprising as it does not cycle through :pending? true -> false
+         ;; Does this mean that delete is always a server based thing?
+         (t/is (nil? (async/<! (sut/delete-db! reference))))
+         (let [m (async/<! c)]
+           (t/is (= config/NO_DOCUMENT m))
+           (t/is (false? (-> m meta :exist?))))
+         (unsubscribe)
+         (done))))))
 
 (defn grab-all [c]
   (let [c2 (async/chan)]

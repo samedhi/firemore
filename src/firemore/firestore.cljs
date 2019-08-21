@@ -199,23 +199,28 @@
                   (println (pr-str m))
                   (recur)))))
 
-(defn doc-fx->change-fx [doc-fx]
-  (fn [change type]
-    (let [doc (.-doc change)]
-      (doc-fx doc))))
+(defn doc-handler [c doc]
+  (async/put!
+   c
+   (with-meta
+     (clojurify (.data doc))
+     {:id (.-id doc)
+      :exist? (.-exists doc)
+      :pending? (.. doc -metadata -hasPendingWrites)})))
+
+(defn change-handler [c change]
+  (doc-handler c (.-doc change)))
 
 (defn listen-db
   ([reference] (listen-db FB reference))
   ([fb reference]
    (let [{:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
-         doc-fx (fn [doc] (->> (.data doc) clojurify (async/put! c)))
+         doc-fx (partial doc-handler c)
          fx (if query
-              (fn [query-snapshot] (.forEach
-                                    (.docChanges query-snapshot)
-                                    (doc-fx->change-fx doc-fx)))
+              (fn [query-snapshot] (.forEach query-snapshot doc-fx))
               doc-fx)
-         unsubscribe (.onSnapshot ref fx)
+         unsubscribe (.onSnapshot ref #js {:includeMetadataChanges true} fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
 
