@@ -6,7 +6,6 @@
    [firemore.firestore :as sut]
    [cljs.test :as test]))
 
-
 (t/deftest keywordizing-test
   (t/are [k s] (= (sut/keywordize->str k) s)
     :a ":a"
@@ -93,16 +92,16 @@
      done
      (async/go
        (async/<! (sut/delete-db! reference))
-       (let [{:keys [chan unsubscribe]} (sut/listen-db reference)
+       (let [{:keys [c unsubscribe]} (sut/listen-db reference)
              m1 {:string "listening-test-1"}
              m2 {:string "listening-test-2"}]
-         (t/is (= config/NO_DOCUMENT (async/<! chan)))
+         (t/is (= config/NO_DOCUMENT (async/<! c)))
          (t/is (nil?                 (async/<! (sut/set-db! reference m1))))
-         (t/is (= m1                 (async/<! chan)))
+         (t/is (= m1                 (async/<! c)))
          (t/is (nil?                 (async/<! (sut/set-db! reference m2))))
-         (t/is (= m2                 (async/<! chan)))
+         (t/is (= m2                 (async/<! c)))
          (t/is (nil?                 (async/<! (sut/delete-db! reference))))
-         (t/is (= config/NO_DOCUMENT (async/<! chan)))
+         (t/is (= config/NO_DOCUMENT (async/<! c)))
          (unsubscribe)
          (done))))))
 
@@ -163,20 +162,22 @@
 
 (def test-city {:name "testacles" :population 1})
 
-#_(t/deftest watch-collection-test
+(t/deftest watch-collection-test
   (t/async
    done
    (async/go
      ;; Clear out the TEST city in case it is still there
      (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [c (sut/get-db ["cities"])
+     (let [{:keys [c unsubscribe]} (sut/listen-db ["cities"])
            cities (loop [acc []]
                     (let [new-acc (conj acc (async/<! c))]
-                      (if (-> new-acc count (= 5))
-                        new-acc
-                        (recur new-acc))))]
+                      (println new-acc)
+                      (if (< (count new-acc) 5)
+                        (recur new-acc)
+                        new-acc)))]
        ;; Exhaust out all the standard cities
-       (t/is (set (map :name ms) (set (map :name query-fixture))))
+       (t/is (= 5 (count cities)))
+       (t/is (set (map :name cities) (set (map :name query-fixture))))
        ;; Add in one additional city
        (async/<! (sut/set-db! ["cities" "TEST"] test-city))
        ;; Confirm that we see additional city
@@ -184,11 +185,12 @@
        ;; Change population of TEST city
        (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
        ;; Confirm that we see change to TEST city
-       (t/is (= test-city (async/<! c)))
+       (t/is (= (assoc test-city :population 2) (async/<! c)))
        ;; Delete TEST city
        (async/<! (sut/delete-db! ["cities" "TEST"]))
        ;; Confirm deletion  (empty map means deleted).
-       (t/is (= config/NO_DOCUMENT (async/<! c))))
+       (t/is (= config/NO_DOCUMENT (async/<! c)))
+       )
      (done)
      )
    ))

@@ -181,9 +181,9 @@
      (if query
        (promise->chan
         #(.get (filter-by-query ref query))
-        (fn [c querySnapshot]
+        (fn [c query-snapshot]
           (.forEach
-           querySnapshot
+           query-snapshot
            (fn [doc]
              (->> (.data doc) clojurify (async/put! c))))
           (async/close! c)))
@@ -199,18 +199,25 @@
                   (println (pr-str m))
                   (recur)))))
 
+(defn doc-fx->change-fx [doc-fx]
+  (fn [change type]
+    (let [doc (.-doc change)]
+      (doc-fx doc))))
+
 (defn listen-db
   ([reference] (listen-db FB reference))
   ([fb reference]
    (let [{:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
-         fx (fn [document]
-              (let [json-data (.data document)
-                    clojure-data (clojurify json-data)]
-                (async/put! c clojure-data)))
+         doc-fx (fn [doc] (->> (.data doc) clojurify (async/put! c)))
+         fx (if query
+              (fn [query-snapshot] (.forEach
+                                    (.docChanges query-snapshot)
+                                    (doc-fx->change-fx doc-fx)))
+              doc-fx)
          unsubscribe (.onSnapshot ref fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
-     {:chan c :unsubscribe unsubscribe-fx})))
+     {:c c :unsubscribe unsubscribe-fx})))
 
 (defn unlisten-db [{:keys [unsubscribe]}]
   (unsubscribe))
