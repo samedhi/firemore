@@ -199,17 +199,22 @@
                   (println (pr-str m))
                   (recur)))))
 
-(defn doc-handler [c doc]
-  (async/put!
-   c
-   (with-meta
-     (clojurify (.data doc))
-     {:id (.-id doc)
-      :exist? (.-exists doc)
-      :pending? (.. doc -metadata -hasPendingWrites)})))
+(defn println-pass-doc [m]
+  (println "c <-" m (meta m))
+  m)
 
-(defn change-handler [c change]
-  (doc-handler c (.-doc change)))
+;; TODO: This removed? argument is nonsense, but for some reason `exists` in the document
+;; does not agree with "removed" from the change...
+(defn doc-handler
+  ([c doc] (doc-handler c doc nil))
+  ([c doc removed?]
+   (async/put!
+    c
+    (with-meta
+      (clojurify (.data doc))
+      {:id (.-id doc)
+       :exist? (if removed? false (.-exists doc))
+       :pending? (.. doc -metadata -hasPendingWrites)}))))
 
 (defn listen-db
   ([reference] (listen-db FB reference))
@@ -218,7 +223,12 @@
          c (async/chan)
          doc-fx (partial doc-handler c)
          fx (if query
-              (fn [query-snapshot] (.forEach query-snapshot doc-fx))
+              (fn [snapshot]
+                (.forEach (.docChanges snapshot #js {:includeMetadataChanges true})
+                          (fn [change]
+                            (doc-fx (.-doc change)
+                                    ;; TODO: More of the same nonsense
+                                    (= "removed" (.-type change))))))
               doc-fx)
          unsubscribe (.onSnapshot ref #js {:includeMetadataChanges true} fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
