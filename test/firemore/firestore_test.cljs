@@ -3,8 +3,7 @@
    [cljs.core.async :as async]
    [cljs.test :as t :include-macros true]
    [firemore.config :as config]
-   [firemore.firestore :as sut]
-   [cljs.test :as test]))
+   [firemore.firestore :as sut]))
 
 (t/deftest keywordizing-test
   (t/are [k s] (= (sut/keywordize->str k) s)

@@ -5,7 +5,8 @@
    [firemore.authentication :as authentication]
    [firemore.finalizing-buffer :as finalizing-buffer]
    [firemore.firestore :as firestore]
-   [firemore.firebase :as firebase])
+   [firemore.firebase :as firebase]
+   [firemore.hydrator :as hydrator])
   (:refer-clojure :exclude [get])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
