@@ -112,6 +112,7 @@
     fx
     on-success
     (fn [c error]
+      (js/console.log error)
       (async/put! c error)
       (async/close! c))))
   ([fx on-success on-failure]
@@ -152,7 +153,7 @@
 
 (defn add-where-to-ref [ref query]
   (reduce
-   (fn [ref [k op v]] (.where k op v))
+   (fn [ref [k op v]] (.where ref k op v))
    ref
    (:where query)))
 
@@ -168,10 +169,10 @@
     ref))
 
 (defn filter-by-query [ref query]
-  (doto ref
-    (add-where-to-ref query)
-    (add-order-to-ref query)
-    (add-limit-to-ref query)))
+  (-> ref
+      (add-where-to-ref query)
+      (add-order-to-ref query)
+      (add-limit-to-ref query)))
 
 (defn get-db
   ([reference]
@@ -230,7 +231,9 @@
                                     ;; TODO: More of the same nonsense
                                     (= "removed" (.-type change))))))
               doc-fx)
-         unsubscribe (.onSnapshot ref #js {:includeMetadataChanges true} fx)
+         unsubscribe (.onSnapshot (if query (filter-by-query ref query) ref)
+                                  #js {:includeMetadataChanges true}
+                                  fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
 

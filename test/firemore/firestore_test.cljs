@@ -6,85 +6,85 @@
    [firemore.firestore :as sut]
    [cljs.test :as test]))
 
-(t/deftest keywordizing-test
-  (t/are [k s] (= (sut/keywordize->str k) s)
-    :a ":a"
-    :a/b ":a/b")
-  (t/are [s k] (= (sut/str->keywordize s) k)
-    ":a" :a
-    ":a/b" :a/b)
-  (t/are [k] (-> k sut/keywordize->str sut/str->keywordize (= k))
-    :a
-    :a/b))
+;; (t/deftest keywordizing-test
+;;   (t/are [k s] (= (sut/keywordize->str k) s)
+;;     :a ":a"
+;;     :a/b ":a/b")
+;;   (t/are [s k] (= (sut/str->keywordize s) k)
+;;     ":a" :a
+;;     ":a/b" :a/b)
+;;   (t/are [k] (-> k sut/keywordize->str sut/str->keywordize (= k))
+;;     :a
+;;     :a/b))
 
-(t/deftest conversion-test
-  (t/are [m] (= m (-> m sut/jsonify sut/clojurify))
-    {}
-    {:a "1" :b 2 :c 3.1}
-    {:a.real.long.key/is-awesome "foo"}))
+;; (t/deftest conversion-test
+;;   (t/are [m] (= m (-> m sut/jsonify sut/clojurify))
+;;     {}
+;;     {:a "1" :b 2 :c 3.1}
+;;     {:a.real.long.key/is-awesome "foo"}))
 
-(t/deftest replace-timestamp-test
-  (let [m {:a config/TIMESTAMP}]
-    (t/is (not= config/TIMESTAMP
-                (->  sut/replace-timestamp :a)))
-    (t/is (some? (-> m sut/replace-timestamp :a)))))
+;; (t/deftest replace-timestamp-test
+;;   (let [m {:a config/TIMESTAMP}]
+;;     (t/is (not= config/TIMESTAMP
+;;                 (->  sut/replace-timestamp :a)))
+;;     (t/is (some? (-> m sut/replace-timestamp :a)))))
 
-(t/deftest expand-query-test
-  (t/are [input-query output-query] (= output-query (sut/expand-query input-query))
-    {}
-    {}
+;; (t/deftest expand-query-test
+;;   (t/are [input-query output-query] (= output-query (sut/expand-query input-query))
+;;     {}
+;;     {}
 
-    {:where ["population" "<" 10000]}
-    {:where [["population" "<" 10000]]}
+;;     {:where ["population" "<" 10000]}
+;;     {:where [["population" "<" 10000]]}
 
-    {:order ["population" ["state" "desc"]]}
-    {:order [["population" "asc"] ["state" "desc"]]}))
+;;     {:order ["population" ["state" "desc"]]}
+;;     {:order [["population" "asc"] ["state" "desc"]]}))
 
-(t/deftest get-and-set-test
-  (let [reference ["test" "get-and-set-test"]
-        m {:string "get-and-set-test"}]
-    (t/async
-     done
-     (async/go
-       (t/is (nil? (async/<! (sut/set-db! reference m))))
-       (t/is (= m  (async/<! (sut/get-db reference))))
-       (done)))))
+;; (t/deftest get-and-set-test
+;;   (let [reference ["test" "get-and-set-test"]
+;;         m {:string "get-and-set-test"}]
+;;     (t/async
+;;      done
+;;      (async/go
+;;        (t/is (nil? (async/<! (sut/set-db! reference m))))
+;;        (t/is (= m  (async/<! (sut/get-db reference))))
+;;        (done)))))
 
-(t/deftest get-and-add-test
-  (let [reference ["test"]
-        m {:string "get-and-add-test"}]
-    (t/async
-     done
-     (async/go
-       (let [{:keys [id]} (async/<! (sut/add-db! reference m))]
-         (t/is (some? id))
-         (t/is (= m (async/<! (sut/get-db (conj reference id)))))
-         (done))))))
+;; (t/deftest get-and-add-test
+;;   (let [reference ["test"]
+;;         m {:string "get-and-add-test"}]
+;;     (t/async
+;;      done
+;;      (async/go
+;;        (let [{:keys [id]} (async/<! (sut/add-db! reference m))]
+;;          (t/is (some? id))
+;;          (t/is (= m (async/<! (sut/get-db (conj reference id)))))
+;;          (done))))))
 
-(t/deftest delete-test
-  (t/async
-   done
-   (async/go
-     (let [reference ["test" "delete-me"]
-           m {:string "delete-test"}]
-       (t/is (nil? (async/<! (sut/set-db! reference m))))
-       (t/is (= m  (async/<! (sut/get-db reference))))
-       (t/is (nil? (async/<! (sut/delete-db! reference))))
-       (t/is (= {} (async/<! (sut/get-db reference))))
-       (done)))))
+;; (t/deftest delete-test
+;;   (t/async
+;;    done
+;;    (async/go
+;;      (let [reference ["test" "delete-me"]
+;;            m {:string "delete-test"}]
+;;        (t/is (nil? (async/<! (sut/set-db! reference m))))
+;;        (t/is (= m  (async/<! (sut/get-db reference))))
+;;        (t/is (nil? (async/<! (sut/delete-db! reference))))
+;;        (t/is (= {} (async/<! (sut/get-db reference))))
+;;        (done)))))
 
-(t/deftest update-test
-  (t/async
-   done
-   (async/go
-     (let [reference ["test" "update-test"]
-           m1 {:string "update-test"}
-           m2 {:integer 1}]
-       (t/is (nil?            (async/<! (sut/set-db! reference m1))))
-       (t/is (= m1            (async/<! (sut/get-db reference))))
-       (t/is (nil?            (async/<! (sut/update-db! reference m2))))
-       (t/is (= (merge m1 m2) (async/<! (sut/get-db reference))))
-       (done)))))
+;; (t/deftest update-test
+;;   (t/async
+;;    done
+;;    (async/go
+;;      (let [reference ["test" "update-test"]
+;;            m1 {:string "update-test"}
+;;            m2 {:integer 1}]
+;;        (t/is (nil?            (async/<! (sut/set-db! reference m1))))
+;;        (t/is (= m1            (async/<! (sut/get-db reference))))
+;;        (t/is (nil?            (async/<! (sut/update-db! reference m2))))
+;;        (t/is (= (merge m1 m2) (async/<! (sut/get-db reference))))
+;;        (done)))))
 
 (def query-fixture
   {"SF" {:name "San Francisco"
@@ -112,6 +112,10 @@
           :country "China"
           :capital false
           :population 21500000}})
+
+
+
+(map :name )
 
 (defn write-fixture [fixture]
   (doseq [[k v] fixture]
@@ -161,52 +165,161 @@
             (async/close! c2))))
     c2))
 
-(t/deftest get-collection-test
+;; (t/deftest get-collection-test
+;;   (t/async
+;;    done
+;;    (async/go
+;;      ;; In case it was not cleared
+;;      (async/<! (sut/delete-db! ["cities" "TEST"]))
+;;      (let [ms (async/<! (grab-all (sut/get-db ["cities"])))]
+;;        (t/is (= (count ms) 5))
+;;        (t/is (set (map :name ms) (set (map :name query-fixture))))
+;;        (done)))))
+
+;; (def test-city {:name "testacles" :population 1})
+
+;; (t/deftest watch-collection-test
+;;   (t/async
+;;    done
+;;    (async/go
+;;      ;; Clear out the TEST city in case it is still there
+;;      (async/<! (sut/delete-db! ["cities" "TEST"]))
+;;      (let [{:keys [c unsubscribe]} (sut/listen-db ["cities"])
+;;            cities (loop [acc []]
+;;                     (let [new-acc (conj acc (async/<! c))]
+;;                       (if (< (count new-acc) 5)
+;;                         (recur new-acc)
+;;                         new-acc)))]
+;;        ;; Exhaust out all the standard cities
+;;        (t/is (= 5 (count cities)))
+;;        (t/is (set (map :name cities) (set (map :name query-fixture))))
+;;        ;; Add in one additional TEST city
+;;        (async/<! (sut/set-db! ["cities" "TEST"] test-city))
+;;        ;; Confirm that we see additional TEST city
+;;        (t/is (= test-city (async/<! c)))
+;;        (t/is (= test-city (async/<! c)))
+;;        ;; Change population of TEST city
+;;        (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
+;;        ;; Confirm that we see change to TEST city
+;;        (t/is (= (assoc test-city :population 2) (async/<! c)))
+;;        (t/is (= (assoc test-city :population 2) (async/<! c)))
+;;        ;; Delete TEST city
+;;        (t/is (nil? (async/<! (sut/delete-db! ["cities" "TEST"]))))
+;;        ;; Confirm deletion of TEST
+;;        ;; TODO: Still surprising that it is always "synchronous"
+;;        (let [m (async/<! c)]
+;;          (t/is (false? (-> m meta :exist?)))
+;;          (t/is (false? (-> m meta :pending?)))))
+;;      (done))))
+
+;; (t/deftest watch-collection-test
+;;   (t/async
+;;    done
+;;    (async/go
+;;      ;; Clear out the TEST city in case it is still there
+;;      (async/<! (sut/delete-db! ["cities" "TEST"]))
+;;      (let [{:keys [c unsubscribe]} (sut/listen-db ["cities"])
+;;            cities (loop [acc []]
+;;                     (let [new-acc (conj acc (async/<! c))]
+;;                       (if (< (count new-acc) 5)
+;;                         (recur new-acc)
+;;                         new-acc)))]
+;;        ;; Exhaust out all the standard cities
+;;        (t/is (= 5 (count cities)))
+;;        (t/is (set (map :name cities) (set (map :name query-fixture))))
+;;        ;; Add in one additional TEST city
+;;        (async/<! (sut/set-db! ["cities" "TEST"] test-city))
+;;        ;; Confirm that we see additional TEST city
+;;        (t/is (= test-city (async/<! c)))
+;;        (t/is (= test-city (async/<! c)))
+;;        ;; Change population of TEST city
+;;        (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
+;;        ;; Confirm that we see change to TEST city
+;;        (t/is (= (assoc test-city :population 2) (async/<! c)))
+;;        (t/is (= (assoc test-city :population 2) (async/<! c)))
+;;        ;; Delete TEST city
+;;        (t/is (nil? (async/<! (sut/delete-db! ["cities" "TEST"]))))
+;;        ;; Confirm deletion of TEST
+;;        ;; TODO: Still surprising that it is always "synchronous"
+;;        (let [m (async/<! c)]
+;;          (t/is (false? (-> m meta :exist?)))
+;;          (t/is (false? (-> m meta :pending?)))))
+;;      (done))))
+
+(t/deftest all-california-test
   (t/async
    done
    (async/go
-     ;; In case it was not cleared
-     (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [ms (async/<! (grab-all (sut/get-db ["cities"])))]
-       (t/is (= (count ms) 5))
-       (t/is (set (map :name ms) (set (map :name query-fixture))))
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [":state" "==" "CA"]}])))
+           expected (->> query-fixture vals (filter #(-> % :state (= "CA"))))]
+       (t/is (= (set (map :name expected)) (set (map :name actual))))
        (done)))))
 
-(def test-city {:name "testacles" :population 1})
-
-(t/deftest watch-collection-test
+(t/deftest all-capital-test
   (t/async
    done
    (async/go
-     ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-db ["cities"])
-           cities (loop [acc []]
-                    (let [new-acc (conj acc (async/<! c))]
-                      (if (< (count new-acc) 5)
-                        (recur new-acc)
-                        new-acc)))]
-       ;; Exhaust out all the standard cities
-       (t/is (= 5 (count cities)))
-       (t/is (set (map :name cities) (set (map :name query-fixture))))
-       ;; Add in one additional TEST city
-       (async/<! (sut/set-db! ["cities" "TEST"] test-city))
-       ;; Confirm that we see additional TEST city
-       (t/is (= test-city (async/<! c)))
-       (t/is (= test-city (async/<! c)))
-       ;; Change population of TEST city
-       (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
-       ;; Confirm that we see change to TEST city
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! ["cities" "TEST"]))))
-       ;; Confirm deletion of TEST
-       ;; TODO: Still surprising that it is always "synchronous"
-       (let [m (async/<! c)]
-         (t/is (false? (-> m meta :exist?)))
-         (t/is (false? (-> m meta :pending?)))))
-     (done))))
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [":capital" "==" true]}])))
+           expected (->> query-fixture vals (filter #(-> % :capital)))]
+       (t/is (= (set (map :name expected)) (set (map :name actual))))
+       (done)))))
+
+(t/deftest all-capital-test
+  (t/async
+   done
+   (async/go
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [":capital" "==" true]}])))
+           expected (->> query-fixture vals (filter #(-> % :capital)))]
+       (t/is (= (set (map :name expected)) (set (map :name actual))))
+       (done)))))
+
+(t/deftest smaller-city-test
+  (t/async
+   done
+   (async/go
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [":population" "<" (* 100 1000)]}])))
+           expected (->> query-fixture vals (filter #(-> % :population (< (* 100 1000)))))]
+       (t/is (= (set (map :name expected)) (set (map :name actual))))
+       (done)))))
 
 
-#_(async/go (println ))
+;; Following requires a "compound index" to pass... If it isn't passing go into the browser console and you
+;; will see a index that you need to click. Doing so will create the index for you.
+(t/deftest compound-query-test
+  (t/async
+   done
+   (async/go
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [[":country" "==" "USA"]
+                                                                     [":population" "<" (* 1000 1000)]]}])))
+           expected (->> query-fixture
+                         vals
+                         (filter #(-> % :population (< (* 1000 1000))))
+                         (filter #(-> % :country (= "USA"))))]
+       (t/is (= (set (map :name expected)) (set (map :name actual))))
+       (done)))))
+
+(t/deftest order-by-state-and-population-test
+  (t/async
+   done
+   (async/go
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:order [":state" [":population" "desc"]]}])))
+           expected (->> query-fixture
+                         vals
+                         (sort-by (fn [m] [(:state m) (-> m :population (* -1))])))]
+       (t/is (= (map :name expected) (map :name actual)))
+       (done)))))
+
+(t/deftest order-by-state-and-population-and-limit-to-two-test
+  (t/async
+   done
+   (async/go
+     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:order [":state" [":population" "desc"]]
+                                                             :limit 2}])))
+           expected (->> query-fixture
+                         vals
+                         ;; nil is evidently less than 'a'
+                         (sort-by (fn [m] [(:state m) (-> m :population (* -1))]))
+                         (take 2))]
+       (t/is (= (map :name expected) (map :name actual)))
+       (done)))))
+
