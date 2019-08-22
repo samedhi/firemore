@@ -208,55 +208,12 @@
          (t/is (false? (-> m meta :pending?)))))
      (done))))
 
-(t/deftest watch-collection-test
-  (t/async
-   done
-   (async/go
-     ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-db ["cities"])
-           cities (loop [acc []]
-                    (let [new-acc (conj acc (async/<! c))]
-                      (if (< (count new-acc) 5)
-                        (recur new-acc)
-                        new-acc)))]
-       ;; Exhaust out all the standard cities
-       (t/is (= 5 (count cities)))
-       (t/is (set (map :name cities) (set (map :name query-fixture))))
-       ;; Add in one additional TEST city
-       (async/<! (sut/set-db! ["cities" "TEST"] test-city))
-       ;; Confirm that we see additional TEST city
-       (t/is (= test-city (async/<! c)))
-       (t/is (= test-city (async/<! c)))
-       ;; Change population of TEST city
-       (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
-       ;; Confirm that we see change to TEST city
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! ["cities" "TEST"]))))
-       ;; Confirm deletion of TEST
-       ;; TODO: Still surprising that it is always "synchronous"
-       (let [m (async/<! c)]
-         (t/is (false? (-> m meta :exist?)))
-         (t/is (false? (-> m meta :pending?)))))
-     (done))))
-
 (t/deftest all-california-test
   (t/async
    done
    (async/go
      (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [":state" "==" "CA"]}])))
            expected (->> query-fixture vals (filter #(-> % :state (= "CA"))))]
-       (t/is (= (set (map :name expected)) (set (map :name actual))))
-       (done)))))
-
-(t/deftest all-capital-test
-  (t/async
-   done
-   (async/go
-     (let [actual (async/<! (grab-all (sut/get-db ["cities" {:where [":capital" "==" true]}])))
-           expected (->> query-fixture vals (filter #(-> % :capital)))]
        (t/is (= (set (map :name expected)) (set (map :name actual))))
        (done)))))
 
@@ -318,4 +275,3 @@
                          (take 2))]
        (t/is (= (map :name expected) (map :name actual)))
        (done)))))
-
