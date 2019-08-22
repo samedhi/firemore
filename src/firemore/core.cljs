@@ -33,7 +33,7 @@
       throw-if-unsupported))
 
 (defn clj->fire
-  "Returns a javascript object from the firemore `document` (a map)."
+  "Returns a javascript object from the firemore `document` (a clojure map)."
   ([document]
    (-> document
        throw-if-unsupported
@@ -41,22 +41,24 @@
 
 ;; references
 
-(defn ref [ks]
-  (->> ks
-       (mapv name)))
+(defn ref
+  "Converts keywords in reference to strings"
+  [ks]
+  (if (map? (peek ks))
+    (vec (conj (map name (butlast ks)) (peek ks)))
+    (mapv name ks)))
 
 ;; database
 
 (defn get
   "Get the document at `reference` in the Firestore database.
 
-  Returns a channel. If a document exist at `reference`, it will be put! upon the
-  channel. If no document exist at `reference`, then `:firemore/no-document` will be
-  put! on the channel. The channel will then be closed.
+  Returns a channel. A map representing the data at this location will be put
+  on this channel. The channel will then be closed.
 
   Note:
   channel -> `clojure.core.async/chan`
-  put!    -> `clojure.core.async/put!`
+  put    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
   (-> reference ref firestore/get-db))
@@ -64,37 +66,35 @@
 (defn watch
   "Watch the document at `reference` in the Firestore database.
 
-  Returns a channel. If a document exist at `reference`, it will be put! upon
-  the channel. If no document exist at reference, then `:firemore/no-document` will
-  be put! on the channel. As the document at reference is updated through
-  time, the channel will put! the newest value of the document (if it exist)
-  or :firemore/no-document (if it does not) upon the channel.
+  Returns a channel. A map representing the data at this location will be put
+  on this channel. As the document at reference is updated through time, the
+  channel will put! the newest value of the document upon the channel.
 
   Important: close! the channel to clean up the state machine feeding this
   channel. Failure to close the channel will result in a memory leak.
 
   Note:
   channel -> `clojure.core.async/chan`
-  put!    -> `clojure.core.async/put!`
+  put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
-  (let [{:keys [chan unsubscribe]} (-> reference ref firestore/listen-db)
-        opts {:on-close #(do (async/close! chan) (unsubscribe))}
+  (let [{:keys [c unsubscribe]} (-> reference ref firestore/listen-db)
+        opts {:on-close #(unsubscribe)}
         buffer (finalizing-buffer/create 1 opts)
         finalizing-chan (async/chan buffer)]
-    (-> chan async/mult (async/tap finalizing-chan))
+    (-> c async/mult (async/tap finalizing-chan))
     finalizing-chan))
 
 (defn write!
   "Writes the `document` to `reference` within the Firestore database.
 
   Returns a channel. Overwrites the document at `reference` with `document`.
-  Iff an error occurs when writing m to Firestore, then the error will be put!
-  upon the channel. The channel will then be closed.
+  Iff an error occurs when writing document to Firestore, then the error will
+  be put upon the channel. The channel will then be closed.
 
   Note:
   channel -> `clojure.core.async/chan`
-  put!    -> `clojure.core.async/put!`
+  put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference document]
   (-> reference ref (firestore/set-db! document)))
@@ -103,12 +103,12 @@
   "Merges `document` into the document at `reference` within the Firestore database.
 
   Returns a channel. Updates (merges) the document at `reference` with `document`.
-  Iff an error occurs when writing `document` to Firestore, then the error will be put!
+  Iff an error occurs when writing `document` to Firestore, then the error will be put
   upon the channel. The channel will then be closed.
 
   Note:
   channel -> `clojure.core.async/chan`
-  put!    -> `clojure.core.async/put!`
+  put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference document]
   (-> reference ref (firestore/update-db! document)))
@@ -117,11 +117,11 @@
   "Deletes the document at `reference` within the Firestore database.
 
   Returns a channel. Iff an error occurs when deleting reference from Firestore,
-  then the error will be put! upon the channel. The channel will then be closed.
+  then the error will be put upon the channel. The channel will then be closed.
 
   Note:
   channel -> `clojure.core.async/chan`
-  put!    -> `clojure.core.async/put!`
+  put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
   (-> reference ref firestore/delete-db!))
@@ -132,9 +132,9 @@
   "Returns a channel. Will put! user map or :firemore/no-user as user state changes..
 
     {:uid <application_unique_id>
-   :email <user_email_address>
-   :name <user_identifier>
-   :photo <url_to_a_photo_for_this_user>}
+     :email <user_email_address>
+     :name <user_identifier>
+     :photo <url_to_a_photo_for_this_user>}
 
   Note: :uid will always be present. :email, :name, :photo may be present depending
   on sign-in provider and/or whether you have set their values."
@@ -189,6 +189,8 @@
 
 ;; watchers
 
+:path->reference
+
 (defn hydrate
   "Add functionality to atom `atm` to allow observation of the Firestore database.
 
@@ -200,7 +202,8 @@
 
   Note:
   atom -> https://clojure.org/reference/atoms"
-  [atm])
+  [atm]
+  )
 
 (defn unhydrate
   "Removes functionality on `atm` that may have been added by `hydrate`."
