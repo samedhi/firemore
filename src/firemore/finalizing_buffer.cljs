@@ -21,7 +21,7 @@
 (defn create
   ([n] (create n {}))
   ([n opts]
-   (FinalizingBuffer. 
-    (buffers/ring-buffer n) 
+   (FinalizingBuffer.
+    (buffers/ring-buffer n)
     n
     opts)))
