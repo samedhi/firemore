@@ -39,12 +39,10 @@
   (clj->js value :keyword-fn keywordize->str))
 
 (defn clojurify [json-document]
-  (if json-document
-    (reduce-kv
-     #(assoc %1 (str->keywordize %2) %3)
-     {}
-     (js->clj json-document))
-    config/NO_DOCUMENT))
+  (reduce-kv
+   #(assoc %1 (str->keywordize %2) %3)
+   {}
+   (js->clj json-document)))
 
 (defn replace-timestamp [m]
   (reduce-kv
