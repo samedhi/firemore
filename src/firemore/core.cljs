@@ -40,9 +40,6 @@
        throw-if-unsupported
        firestore/jsonify)))
 
-;; references
-
-
 ;; database
 
 (defn get

@@ -172,6 +172,15 @@
       (add-order-to-ref query)
       (add-limit-to-ref query)))
 
+(defn doc-upgrader
+  ([doc] (doc-upgrader doc nil))
+  ([doc removed?]
+   (with-meta
+     (clojurify (.data doc))
+     {:id (.-id doc)
+      :exist? (if removed? false (.-exists doc))
+      :pending? (.. doc -metadata -hasPendingWrites)})))
+
 (defn get-db
   ([reference]
    (get-db FB reference))
@@ -180,16 +189,17 @@
      (if query
        (promise->chan
         #(.get (filter-by-query ref query))
-        (fn [c query-snapshot]
-          (.forEach
-           query-snapshot
-           (fn [doc]
-             (->> (.data doc) clojurify (async/put! c))))
-          (async/close! c)))
+        (fn [c snapshot]
+          (let [a (atom [])]
+            (.forEach snapshot #(->> %
+                                     doc-upgrader
+                                     (swap! a conj)))
+            (async/put! c @a)
+            (async/close! c))))
        (promise->chan
         #(.get ref)
         (fn [c doc]
-          (->> (.data doc) clojurify (async/put! c))
+          (->> doc doc-upgrader (async/put! c))
           (async/close! c)))))))
 
 #_(async/go (let [c (get-db ["cities"])]
@@ -198,10 +208,6 @@
                   (println (pr-str m))
                   (recur)))))
 
-(defn println-pass-doc [m]
-  (println "c <-" m (meta m))
-  m)
-
 ;; TODO: This removed? argument is nonsense, but for some reason `exists` in the document
 ;; does not agree with "removed" from the change...
 (defn doc-handler
@@ -209,11 +215,7 @@
   ([c doc removed?]
    (async/put!
     c
-    (with-meta
-      (clojurify (.data doc))
-      {:id (.-id doc)
-       :exist? (if removed? false (.-exists doc))
-       :pending? (.. doc -metadata -hasPendingWrites)}))))
+    (doc-upgrader doc removed?))))
 
 (defn listen-db
   ([reference] (listen-db FB reference))
@@ -230,6 +232,23 @@
                                     (= "removed" (.-type change))))))
               doc-fx)
          unsubscribe (.onSnapshot (if query (filter-by-query ref query) ref)
+                                  #js {:includeMetadataChanges true}
+                                  fx)
+         unsubscribe-fx #(do (async/close! c) (unsubscribe))]
+     {:c c :unsubscribe unsubscribe-fx})))
+
+(defn listen-collection-db
+  ([reference] (listen-collection-db FB reference))
+  ([fb reference]
+   (let [{:keys [ref query]} (shared-db fb reference nil)
+         c (async/chan)
+         fx (fn [snapshot]
+              (let [a (atom [])]
+                (.forEach snapshot #(->> %
+                                         doc-upgrader
+                                         (swap! a conj)))
+                (async/put! c @a)))
+         unsubscribe (.onSnapshot (filter-by-query ref query)
                                   #js {:includeMetadataChanges true}
                                   fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
