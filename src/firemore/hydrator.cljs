@@ -3,39 +3,68 @@
    [cljs.core.async :as async]
    [clojure.data :as data]
    [clojure.set :as set]
+   [firemore.config :as config]
    [firemore.firestore :as firestore]))
 
 (enable-console-print!)
 
-(defn diff-old [old new]
-  (let [[only-a only-b _] (data/diff old new)
-        changed (reduce
-                 (fn [m k]
-                   (assoc m k [(get only-a k) (get only-b k)]))
-                 {}
-                 (set/intersection (set (keys only-a)) (set (keys only-b))))]
-    {:removed (reduce dissoc (or only-a {}) (keys changed))
-     :added   (reduce dissoc (or only-b {}) (keys changed))
-     :changed changed}))
+(defn prepend [x y]
+  (apply conj x y))
 
-(defn diff [old new]
-  (let [[only-a only-b _] (data/diff old new)]
-    {:removed (or only-a {})
-     :added (or only-b {})}))
+;; Note: It is with a heavy heart that I add this mutable concept into this function.
+;; But the alternative is that I either close over the input and output path to
+;; create all the needed functions OR pass them as options to all needed functions.
+;; Both solutions seem like overkill as I doubt that you are going to have more
+;; than one (input, output) tuple per cljs application. Revisit this if it turns out
+;; your assumptions are incorrect.
+(defn prepend-input-path [path]
+  (prepend @config/input-path path))
 
-(defn handle-removed [{:keys [removed] :as m}]
-  (doseq [[k v] removed]
-    (println "Destroying observer for" k "->" v )
-    (-> v meta :unsubscribe (apply []))))
+(defn prepend-output-path [path]
+  (prepend @config/output-path path))
 
-(defn handle-added [added]
-  (reduce-kv
-   (fn [m k v]
-     (println "Creating observer for" k "->" v )
-     (let [{:keys [c unsubscribe] :as m2} (firestore/listen-db v)]
-       (async/go
-         (when-let [document (async/<! )]
-           ))
-       (assoc m k (with-meta v (select-keys m2 [:unsubscribe])))))
-   {}
-   added))
+(defn handle-removed [m path]
+  (when-let [reference (get m (prepend-input-path path))]
+    (println "Destroying observer for" path "->" reference)
+    (-> reference meta :unsubscribe (apply []))))
+
+(defn subtract [m path]
+  (let [input-path (prepend-input-path path)
+        output-path (prepend-output-path path)]
+    (handle-removed m path)
+    (-> m
+        (update-in m (pop input-path)  dissoc (peek input-path))
+        (update-in m (pop output-path) dissoc (peek output-path)))))
+
+
+;; Note: Ugh. Passing a atm to a function that is going to be called in swap!....
+;; The issue is that I need to have the atom so I can build the state machine. I
+;; also considered putting the atom in a globally reachable place (config) or
+;; having registration be a side effect in a watch function attached to the
+;; atom. Not good. Bad code.
+(defn handle-added [m atm path reference]
+  (println "Creating observer for" path "->" reference)
+  (let [listen (if (or (-> reference peek map?)
+                       (-> reference count odd?))
+                 firestore/listen-collection-db
+                 firestore/listen-db)
+        {:keys [c unsubscribe] :as m2} (listen reference)
+        input-path (prepend-input-path path)]
+    (async/go-loop []
+      (when-let [v (async/<! c)]
+        (swap! atm assoc-in input-path v)
+        (recur)))
+    (with-meta reference m2)))
+
+(defn add [atm m path reference]
+  (let [input-path (prepend-input-path path)
+        output-path (prepend-output-path path)]
+    (-> (remove   m path)
+        (assoc-in input-path (handle-added m atm path reference))
+        (assoc-in output-path []))))
+
+(defn subtract! [atm path]
+  (swap! atm subtract path))
+
+(defn add! [atm path reference]
+  (swap! atm add atm path reference))
