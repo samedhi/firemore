@@ -14,7 +14,7 @@
   ([fb path]
    (let [a (-> fb firebase/db atom)]
      (loop [[col doc & rs] path]
-       (reset! a (.collection @a col))
+       (reset! a (.collection @a (name col)))
        (when (some? doc)
          (reset! a (.doc @a doc)))
        (when (some? rs) (recur rs)))

@@ -42,12 +42,6 @@
 
 ;; references
 
-(defn ref
-  "Converts keywords in reference to strings"
-  [ks]
-  (if (map? (peek ks))
-    (vec (conj (map name (butlast ks)) (peek ks)))
-    (mapv name ks)))
 
 ;; database
 
