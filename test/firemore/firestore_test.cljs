@@ -40,7 +40,7 @@
     {:order [["population" "asc"] ["state" "desc"]]}))
 
 (t/deftest get-and-set-test
-  (let [reference ["test" "get-and-set-test"]
+  (let [reference [:test "get-and-set-test"]
         m {:string "get-and-set-test"}]
     (t/async
      done
@@ -50,7 +50,7 @@
        (done)))))
 
 (t/deftest get-and-add-test
-  (let [reference ["test"]
+  (let [reference [:test]
         m {:string "get-and-add-test"}]
     (t/async
      done
@@ -64,7 +64,7 @@
   (t/async
    done
    (async/go
-     (let [reference ["test" "delete-me"]
+     (let [reference [:test "delete-me"]
            m {:string "delete-test"}]
        (t/is (nil? (async/<! (sut/set-db! reference m))))
        (t/is (= m  (async/<! (sut/get-db reference))))
@@ -76,7 +76,7 @@
   (t/async
    done
    (async/go
-     (let [reference ["test" "update-test"]
+     (let [reference [:test "update-test"]
            m1 {:string "update-test"}
            m2 {:integer 1}]
        (t/is (nil?            (async/<! (sut/set-db! reference m1))))
@@ -114,13 +114,13 @@
 
 (defn write-fixture [fixture]
   (doseq [[k v] fixture]
-    (sut/set-db! ["cities" k] v)))
+    (sut/set-db! [:cities k] v)))
 
 ;; The fixture data is never modified. This only needs to be written once...
 #_(write-fixture cities-fixture)
 
 ;; confirm fixtures are written
-#_(async/go (println (async/<! (sut/get-db ["cities"]))))
+#_(async/go (println (async/<! (sut/get-db [:cities]))))
 
 (t/deftest listening-test
   (let [reference ["test" "listening-test"]]
@@ -156,8 +156,8 @@
    done
    (async/go
      ;; In case it was not cleared
-     (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [ms (async/<! (sut/get-db ["cities"]))]
+     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
+     (let [ms (async/<! (sut/get-db [:cities]))]
        (t/is (= (count ms) 5))
        (t/is (set (map :name ms) (set (map :name cities-fixture))))
        (done)))))
@@ -169,8 +169,8 @@
    done
    (async/go
      ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-db ["cities"])
+     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
+     (let [{:keys [c unsubscribe]} (sut/listen-db [:cities])
            cities (loop [acc []]
                     (let [new-acc (conj acc (async/<! c))]
                       (if (< (count new-acc) 5)
@@ -180,17 +180,17 @@
        (t/is (= 5 (count cities)))
        (t/is (set (map :name cities) (set (map :name cities-fixture))))
        ;; Add in one additional TEST city
-       (async/<! (sut/set-db! ["cities" "TEST"] test-city))
+       (async/<! (sut/set-db! [:cities "TEST_CITY"] test-city))
        ;; Confirm that we see additional TEST city
        (t/is (= test-city (async/<! c)))
        (t/is (= test-city (async/<! c)))
        ;; Change population of TEST city
-       (async/<! (sut/update-db! ["cities" "TEST"] {:population 2}))
+       (async/<! (sut/update-db! [:cities "TEST_CITY"] {:population 2}))
        ;; Confirm that we see change to TEST city
        (t/is (= (assoc test-city :population 2) (async/<! c)))
        (t/is (= (assoc test-city :population 2) (async/<! c)))
        ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! ["cities" "TEST"]))))
+       (t/is (nil? (async/<! (sut/delete-db! [:cities "TEST_CITY"]))))
        ;; Confirm deletion of TEST
        ;; TODO: Still surprising that it is always "synchronous"
        (let [m (async/<! c)]
@@ -203,18 +203,18 @@
    done
    (async/go
      ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! ["cities" "TEST"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-collection-db ["cities"])]
+     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
+     (let [{:keys [c unsubscribe]} (sut/listen-collection-db [:cities])]
        ;; Get all the standard cities
        (t/is (= (->> cities-fixture vals (map :name) set)
                 (->> (async/<! c) (map :name) set)))
        ;; Add in one additional TEST city
-       (async/<! (sut/set-db! ["cities" "TEST"] test-city))
+       (async/<! (sut/set-db! [:cities "TEST_CITY"] test-city))
        ;; Confirm that we see additional TEST city
        (t/is (true? (->> (async/<! c) (filter #(-> % :name (= "testacles"))) first meta :pending?)))
        (t/is (false? (->> (async/<! c) (filter #(-> % :name (= "testacles"))) first meta :pending?)))
        ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! ["cities" "TEST"]))))
+       (t/is (nil? (async/<! (sut/delete-db! [:cities "TEST_CITY"]))))
        ;; Confirm deletion of TEST
        (t/is (= (->> cities-fixture vals (map :name) set)
                 (->> (async/<! c) (map :name) set))))
@@ -224,7 +224,7 @@
   (t/async
    done
    (async/go
-     (let [actual (async/<! (sut/get-db ["cities" {:where [":state" "==" "CA"]}]))
+     (let [actual (async/<! (sut/get-db [:cities {:where [":state" "==" "CA"]}]))
            expected (->> cities-fixture vals (filter #(-> % :state (= "CA"))))]
        (t/is (= (set (map :name expected)) (set (map :name actual))))
        (done)))))
@@ -233,7 +233,7 @@
   (t/async
    done
    (async/go
-     (let [actual (async/<! (sut/get-db ["cities" {:where [":capital" "==" true]}]))
+     (let [actual (async/<! (sut/get-db [:cities {:where [":capital" "==" true]}]))
            expected (->> cities-fixture vals (filter #(-> % :capital)))]
        (t/is (= (set (map :name expected)) (set (map :name actual))))
        (done)))))
@@ -242,7 +242,7 @@
   (t/async
    done
    (async/go
-     (let [actual (async/<! (sut/get-db ["cities" {:where [":population" "<" (* 100 1000)]}]))
+     (let [actual (async/<! (sut/get-db [:cities {:where [":population" "<" (* 100 1000)]}]))
            expected (->> cities-fixture vals (filter #(-> % :population (< (* 100 1000)))))]
        (t/is (= (set (map :name expected)) (set (map :name actual))))
        (done)))))
@@ -254,7 +254,7 @@
   (t/async
    done
    (async/go
-     (let [actual (async/<! (sut/get-db ["cities" {:where [[":country" "==" "USA"]
+     (let [actual (async/<! (sut/get-db [:cities {:where [[":country" "==" "USA"]
                                                            [":population" "<" (* 1000 1000)]]}]))
            expected (->> cities-fixture
                          vals
@@ -267,7 +267,7 @@
   (t/async
    done
    (async/go
-     (let [actual (async/<! (sut/get-db ["cities" {:order [":state" [":population" "desc"]]}]))
+     (let [actual (async/<! (sut/get-db [:cities {:order [":state" [":population" "desc"]]}]))
            expected (->> cities-fixture
                          vals
                          (sort-by (fn [m] [(:state m) (-> m :population (* -1))])))]
@@ -278,7 +278,7 @@
   (t/async
    done
    (async/go
-     (let [actual (async/<! (sut/get-db ["cities" {:order [":state" [":population" "desc"]]
+     (let [actual (async/<! (sut/get-db [:cities {:order [":state" [":population" "desc"]]
                                                    :limit 2}]))
            expected (->> cities-fixture
                          vals
