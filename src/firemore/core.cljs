@@ -53,7 +53,7 @@
   put    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
-  (-> reference ref firestore/get-db))
+  (firestore/get-db reference))
 
 (defn watch
   "Watch the document at `reference` in the Firestore database.
@@ -70,7 +70,7 @@
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
-  (let [{:keys [c unsubscribe]} (-> reference ref firestore/listen-db)
+  (let [{:keys [c unsubscribe]} (firestore/listen-db reference)
         opts {:on-close #(unsubscribe)}
         buffer (finalizing-buffer/create 1 opts)
         finalizing-chan (async/chan buffer)]
@@ -89,7 +89,7 @@
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference document]
-  (-> reference ref (firestore/set-db! document)))
+  (firestore/set-db! reference document))
 
 (defn merge!
   "Merges `document` into the document at `reference` within the Firestore database.
@@ -103,7 +103,7 @@
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference document]
-  (-> reference ref (firestore/update-db! document)))
+  (firestore/update-db! reference document))
 
 (defn delete!
   "Deletes the document at `reference` within the Firestore database.
@@ -116,7 +116,7 @@
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
-  (-> reference ref firestore/delete-db!))
+  (firestore/delete-db! reference))
 
 ;; authentication
 
