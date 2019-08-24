@@ -33,35 +33,39 @@
         output-path (prepend-output-path path)]
     (handle-removed m path)
     (-> m
-        (update-in m (pop input-path)  dissoc (peek input-path))
-        (update-in m (pop output-path) dissoc (peek output-path)))))
+        (update-in (pop input-path)  dissoc (peek input-path))
+        (update-in (pop output-path) dissoc (peek output-path)))))
 
+
+(defn query? [reference]
+  (or (-> reference peek map?)
+      (-> reference count odd?)))
 
 ;; Note: Ugh. Passing a atm to a function that is going to be called in swap!....
 ;; The issue is that I need to have the atom so I can build the state machine. I
 ;; also considered putting the atom in a globally reachable place (config) or
-;; having registration be a side effect in a watch function attached to the
-;; atom. Not good. Bad code.
+;; having state machine be a side effect in a watch function attached to the
+;; atom. Not good. Bad code. What better?
 (defn handle-added [m atm path reference]
   (println "Creating observer for" path "->" reference)
-  (let [listen (if (or (-> reference peek map?)
-                       (-> reference count odd?))
+  (let [listen (if (query? reference)
                  firestore/listen-collection-db
                  firestore/listen-db)
         {:keys [c unsubscribe] :as m2} (listen reference)
-        input-path (prepend-input-path path)]
+        output-path (prepend-output-path path)]
     (async/go-loop []
       (when-let [v (async/<! c)]
-        (swap! atm assoc-in input-path v)
+        (swap! atm assoc-in output-path v)
         (recur)))
     (with-meta reference m2)))
 
-(defn add [atm m path reference]
+(defn add [m atm path reference]
   (let [input-path (prepend-input-path path)
         output-path (prepend-output-path path)]
-    (-> (remove   m path)
+    (-> m
+        (subtract path)
         (assoc-in input-path (handle-added m atm path reference))
-        (assoc-in output-path []))))
+        (assoc-in output-path (if (query? reference) [] {})))))
 
 (defn subtract! [atm path]
   (swap! atm subtract path))

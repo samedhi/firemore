@@ -1,27 +1,55 @@
 (ns firemore.hydrator-test
   (:require
+   [cljs.core.async :as async]
    [cljs.test :as t :include-macros true]
-   [firemore.hydrator :as sut]))
+   [firemore.hydrator :as sut]
+   [firemore.firestore :as firestore]))
 
-(t/deftest diff-old-test
-  (t/are [old new expected] (= expected (sut/diff-old old new))
-    {} {:a 1} {:removed {}
-               :added   {:a 1}
-               :changed {}}
-    {:a 1} {} {:removed {:a 1}
-               :added   {}
-               :changed {}}
-    {:a 1} {:a 2} {:removed {}
-                   :added   {}
-                   :changed {:a [1 2]}}))
+(defn change-watcher [atm]
+  (let [c (async/chan)]
+    (add-watch
+     atm
+     :on-change
+     (fn [k r o n]
+       (async/put! c n)))
+    c))
 
-(t/deftest diff-test
-  (t/are [old new expected] (= expected (sut/diff old new))
-    {} {:a 1} {:removed {}
-               :added   {:a 1}}
-    {:a 1} {} {:removed {:a 1}
-               :added   {}}
-    {:a 1} {:a 2} {:removed {:a 1}
-                   :added   {:a 2}}))
+(t/deftest test-hydrator-missing-document
+  (let [a (atom {})
+        c (change-watcher a)]
+    (t/async
+     done
+     (async/go
+       (sut/add! a [:hydrator] [:test-empty-collection "MISSING_DOC"])
+       (let [m (async/<! c)]
+         (t/is (= {:hydrator [:test-empty-collection "MISSING_DOC"]}
+                  (:firemore m)))
+         (t/is (= {:hydrator {}}
+                  (:firestore m))))
+       (let [m (async/<! c)]
+         (t/is (= {:hydrator [:test-empty-collection "MISSING_DOC"]}
+                  (:firemore m)))
+         (t/is (= {:hydrator {}}
+                  (:firestore m))))
+       (done)))))
+
+(t/deftest test-hydrator-empty-collection
+  (let [a (atom {})
+        c (change-watcher a)]
+    (t/async
+     done
+     (async/go
+       (sut/add! a [:hydrator] [:test-empty-collection])
+       (let [m (async/<! c)]
+         (t/is (= {:hydrator [:test-empty-collection]}
+                  (:firemore m)))
+         (t/is (= {:hydrator []}
+                  (:firestore m))))
+       (let [m (async/<! c)]
+         (t/is (= {:hydrator [:test-empty-collection]}
+                  (:firemore m)))
+         (t/is (= {:hydrator []}
+                  (:firestore m))))
+       (done)))))
 
 
