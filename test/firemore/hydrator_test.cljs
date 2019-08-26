@@ -84,14 +84,6 @@
          (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
                    :dc {}}
                   (:firestore m))))
-       ;; BUG: Not clear why this comes in twice...
-       (let [m (async/<! c)]
-         (t/is (= {:tokyo [:cities "TOK"]
-                   :dc [:cities "DC"]}
-                  (:firemore m)))
-         (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
-                   :dc {}}
-                  (:firestore m))))
        (let [m (async/<! c)]
          (t/is (= {:tokyo [:cities "TOK"]
                    :dc [:cities "DC"]}
