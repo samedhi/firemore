@@ -12,3 +12,6 @@
     {:boolean true}
     {:nil nil}
     {:instant (js/Date)}))
+
+#_(t/deftest conversion-test
+  (t/is (= true false)))

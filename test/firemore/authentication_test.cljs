@@ -10,8 +10,12 @@
    done
    (let [not-blank? (complement string/blank?)]
      (async/go
+       (println "go started")
        (t/is (some? (sut/login-anonymously!)))
        (let [m (async/<! sut/user-chan)]
+         (println "1")
          (t/is (-> m :uid not-blank?))
          (t/is (= m @sut/user-atom))
-         (done))))))
+         (println "done next")
+         (done)
+         (println "done called"))))))

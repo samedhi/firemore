@@ -35,7 +35,11 @@
                 :compiler {:main firemore.test-runner
                            :optimizations :whitespace
                            :output-dir "resources/public/js/out-test"
-                           :output-to "resources/public/js/test.js"}}]}
+                           :output-to "resources/public/js/test.js"
+                           :pretty-print true}}]
+              :test-commands {"cljs-test" ["phantomjs"
+                                           "resources/public/runner.js"
+                                           "resources/public/test-phantom.html"]}}
   :main cryogen.core
   :profiles {:dev {:dependencies [[cider/piggieback "0.4.1"]]
                    :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}}}
