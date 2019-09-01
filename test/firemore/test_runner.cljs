@@ -12,12 +12,12 @@
 
 (defn test-run []
   (t/run-tests
-   ;; (cljs-test-display.core/init! "test")
+   (cljs-test-display.core/init! "test")
    'firemore.authentication-test
    'firemore.core-test
-   ;; 'firemore.firebase-test
-   ;; 'firemore.firestore-test
-   ;; 'firemore.hydrator-test
+   'firemore.firebase-test
+   'firemore.firestore-test
+   'firemore.hydrator-test
    ))
 
 (def ^:export exit_code 0)
