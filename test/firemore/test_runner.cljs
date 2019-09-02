@@ -10,6 +10,15 @@
 
 (enable-console-print!)
 
+(def successful (atom false))
+
+(def complete (atom false))
+
+(defmethod t/report ["test" :end-run-tests] [m]
+  (when (cljs.test/successful? m)
+    (reset! successful true))
+  (reset! complete true))
+
 (defn test-run []
   (t/run-tests
    (cljs-test-display.core/init! "test")
@@ -20,14 +29,11 @@
    'firemore.hydrator-test
    ))
 
-(def ^:export exit_code 0)
+(defn ^:export is_successful []
+  @successful)
 
-(defmethod cljs.test/report [:cljs.test/default :end-run-tests] [m]
-  (println "This even ran")
-  (println m)
-  (when-not (cljs.test/successful? m)
-    (def exit_code 1)))
+(defn ^:export is_complete []
+  @complete)
 
 (defn ^:export run []
   (test-run))
-
