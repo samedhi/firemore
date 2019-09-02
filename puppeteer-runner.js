@@ -1,12 +1,12 @@
 const puppeteer = require('puppeteer');
 
 (async() => {
-    const browser = await puppeteer.launch({headless: false,
+    const browser = await puppeteer.launch({headless: true,
                                             defaultViewport: {width: 800,
                                                               height: 2400}});
     const page = await browser.newPage();
     page.on('console', msg => console.log(msg.text()));
-    await page.goto('http://localhost:3449/test.html');
+    await page.goto('http://localhost:3449/test-without-ui.html');
     const result = await page.evaluate(async function() {
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
@@ -19,9 +19,9 @@ const puppeteer = require('puppeteer');
             }
         }
 
-        firemore.test_runner.run();
+        // firemore.test_runner.run();
         await loop_until_predicate_true(firemore.test_runner.is_complete);
     });
-    await page.screenshot({path: 'example.png'});
+    // await page.screenshot({path: 'puppeteer_result.png'});
     await browser.close();
 })();

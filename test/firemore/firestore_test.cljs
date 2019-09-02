@@ -78,7 +78,7 @@
     {:order ["population" ["state" "desc"]]}
     {:order [["population" "asc"] ["state" "desc"]]}))
 
-(t/deftest get-and-set-test
+#_(t/deftest get-and-set-test
   (let [reference [:test "get-and-set-test"]
         m {:string "get-and-set-test"}]
     (t/async

@@ -14,20 +14,20 @@
 
 (def complete (atom false))
 
-(defmethod t/report ["test" :end-run-tests] [m]
+(defmethod t/report [::t/default :end-run-tests] [m]
+  (println "This is being called")
   (when (cljs.test/successful? m)
     (reset! successful true))
   (reset! complete true))
 
-(defn test-run []
+(defn test-run [ui?]
   (t/run-tests
-   (cljs-test-display.core/init! "test")
+   (when ui? (cljs-test-display.core/init! "test"))
    'firemore.authentication-test
    'firemore.core-test
    'firemore.firebase-test
    'firemore.firestore-test
-   'firemore.hydrator-test
-   ))
+   'firemore.hydrator-test))
 
 (defn ^:export is_successful []
   @successful)
@@ -36,4 +36,7 @@
   @complete)
 
 (defn ^:export run []
+  (test-run true))
+
+(defn ^:export run_without_ui []
   (test-run))
