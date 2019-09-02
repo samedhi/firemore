@@ -42,6 +42,8 @@
 ;; confirm fixtures are written
 #_(async/go (println (async/<! (sut/get-db [:cities]))))
 
+
+
 (t/deftest keywordizing-test
   (t/are [k s] (= (sut/keywordize->str k) s)
     :a ":a"

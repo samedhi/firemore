@@ -74,6 +74,11 @@
            (t/is (= {:tokyo [:cities "TOK"]}
                     (:firemore m)))
            (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
+                    (:firestore m))))
+         (let [m (async/<! c)]
+           (t/is (= {:tokyo [:cities "TOK"]}
+                    (:firemore m)))
+           (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
                     (:firestore m)))))
 
        (t/testing
@@ -86,13 +91,6 @@
              (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
                        :dc    {}}
                     (:firestore m))))
-           (let [m (async/<! c)]
-             (t/is (= {:tokyo [:cities "TOK"]
-                       :dc    [:cities "DC"]}
-                      (:firemore m)))
-             (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
-                       :dc    {}}
-                      (:firestore m))))
            (let [m (async/<! c)]
              (t/is (= {:tokyo [:cities "TOK"]
                        :dc    [:cities "DC"]}
