@@ -23,4 +23,7 @@
 
 (defn login-anonymously!
   ([] (login-anonymously! FB))
-  ([fb] (.signInAnonymously (firebase/auth fb))))
+  ([fb] (login-anonymously! FB false))
+  ([fb force?]
+   (when (or force? (nil? @user-atom))
+     (.signInAnonymously (firebase/auth fb)))))
