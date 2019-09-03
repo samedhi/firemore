@@ -3,15 +3,22 @@
    [firemore.authentication :as sut]
    [cljs.core.async :as async]
    [cljs.test :as t :include-macros true]
-   [clojure.string :as string]))
+   [clojure.string :as string]
+   [firemore.authentication :as authentication]))
 
 (t/deftest login-anonymously!-test
   (t/async
    done
-   (let [not-blank? (complement string/blank?)]
-     (async/go
-       (t/is (some? (sut/login-anonymously!)))
-       (let [m (async/<! sut/user-chan)]
-         (t/is (-> m :uid not-blank?))
-         (t/is (= m @sut/user-atom))
-         (done))))))
+   (let [not-blank? (complement string/blank?)
+         done-called (atom false)
+         done-fx #(when-not @done-called
+                    (reset! done-called true)
+                    (done))
+         watcher (fn [_ _ _ n]
+                   (when n
+                     (t/is (-> n :uid not-blank?))
+                     (t/is (-> n :anonymous? true?))
+                     (t/is (some? n))
+                     (done-fx)))]
+     (add-watch authentication/user-atom :watch-test watcher)
+     (sut/login-anonymously!))))

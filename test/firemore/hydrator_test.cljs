@@ -62,49 +62,60 @@
     (t/async
      done
      (async/go
-       ;; Watching Tokyo
-       (sut/add! a [:tokyo] [:cities "TOK"])
-       (let [m (async/<! c)]
-         (t/is (= {:tokyo [:cities "TOK"]}
-                  (:firemore m)))
-         (t/is (= {:tokyo {}}
-                  (:firestore m))))
-       (let [m (async/<! c)]
-         (t/is (= {:tokyo [:cities "TOK"]}
-                  (:firemore m)))
-         (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
-                  (:firestore m))))
+       (t/testing
+           "start watching Tokyo"
+         (sut/add! a [:tokyo] [:cities "TOK"])
+         (let [m (async/<! c)]
+           (t/is (= {:tokyo [:cities "TOK"]}
+                    (:firemore m)))
+           (t/is (= {:tokyo {}}
+                    (:firestore m))))
+         (let [m (async/<! c)]
+           (t/is (= {:tokyo [:cities "TOK"]}
+                    (:firemore m)))
+           (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
+                    (:firestore m))))
+         (let [m (async/<! c)]
+           (t/is (= {:tokyo [:cities "TOK"]}
+                    (:firemore m)))
+           (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
+                    (:firestore m)))))
 
-       ;; Let's start watching DC as well
-       (sut/add! a [:dc] [:cities "DC"])
-       (let [m (async/<! c)]
-         (t/is (= {:tokyo [:cities "TOK"]
-                   :dc [:cities "DC"]}
-                  (:firemore m)))
-         (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
-                   :dc {}}
-                  (:firestore m))))
-       (let [m (async/<! c)]
-         (t/is (= {:tokyo [:cities "TOK"]
-                   :dc [:cities "DC"]}
-                  (:firemore m)))
-         (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
-                   :dc (firestore-test/cities-fixture "DC")}
-                  (:firestore m))))
+       (t/testing
+           "start watching DC"
+           (sut/add! a [:dc] [:cities "DC"])
+           (let [m (async/<! c)]
+             (t/is (= {:tokyo [:cities "TOK"]
+                       :dc    [:cities "DC"]}
+                    (:firemore m)))
+             (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
+                       :dc    {}}
+                    (:firestore m))))
+           (let [m (async/<! c)]
+             (t/is (= {:tokyo [:cities "TOK"]
+                       :dc    [:cities "DC"]}
+                      (:firemore m)))
+             (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")
+                       :dc    (firestore-test/cities-fixture "DC")}
+                      (:firestore m)))))
 
-       (sut/subtract! a [:tokyo])
-       (let [m (async/<! c)]
-         (t/is (= {:dc [:cities "DC"]}
+       (t/testing
+           "Stop watching Tokyo"
+         (sut/subtract! a [:tokyo])
+         (let [m (async/<! c)]
+           (t/is (= {:dc [:cities "DC"]}
                   (:firemore m)))
-         (t/is (= {:dc (firestore-test/cities-fixture "DC")}
-                  (:firestore m))))
+           (t/is (= {:dc (firestore-test/cities-fixture "DC")}
+                  (:firestore m)))))
 
-       (sut/subtract! a [:dc])
-       (let [m (async/<! c)]
-         (t/is (= {}
+       (t/testing
+        "Stop watching DC"
+        (sut/subtract! a [:dc])
+        (let [m (async/<! c)]
+          (t/is (= {}
                   (:firemore m)))
-         (t/is (= {}
-                  (:firestore m))))
+          (t/is (= {}
+                  (:firestore m)))))
        (done)))))
 
 (t/deftest test-hydrator-collection

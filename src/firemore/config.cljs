@@ -25,8 +25,6 @@
 
 (def NO_DOCUMENT {})
 
-(def NO_USER :firemore/no-user)
-
 (def input-path (atom [:firemore]))
 
 (def output-path (atom [:firestore]))

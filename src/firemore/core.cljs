@@ -131,7 +131,9 @@
   Note: :uid will always be present. :email, :name, :photo may be present depending
   on sign-in provider and/or whether you have set their values."
   []
-  authentication/user-chan)
+  ;; TODO: What to do with this?
+  ;; authentication/user-chan
+  )
 
 (defn user
   "Returns the last value returned from user-chan."

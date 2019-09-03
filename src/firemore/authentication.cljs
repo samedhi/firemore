@@ -10,25 +10,20 @@
 
 (def FB firebase/FB)
 
-(def user-atom (atom config/NO_USER))
-
-(def user-chan (async/chan (async/sliding-buffer 1)))
-
-(add-watch user-atom
-           :value-change
-           (fn [_ _ _ new]
-             (async/put! user-chan new)))
+(def user-atom (atom nil))
 
 (defn user-change-handler [js-user]
   (reset!
    user-atom
-   (if js-user
+   (when js-user
      {:anonymous? (.-isAnonymous js-user)
-      :uid        (.-uid js-user)}
-     config/NO_USER)))
+      :uid        (.-uid js-user)})))
 
 (-> FB firebase/auth (.onAuthStateChanged user-change-handler))
 
 (defn login-anonymously!
   ([] (login-anonymously! FB))
-  ([fb] (.signInAnonymously (firebase/auth fb))))
+  ([fb] (login-anonymously! FB false))
+  ([fb force?]
+   (when (or force? (nil? @user-atom))
+     (.signInAnonymously (firebase/auth fb)))))
