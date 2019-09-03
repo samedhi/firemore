@@ -39,4 +39,4 @@
   (test-run true))
 
 (defn ^:export run_without_ui []
-  (test-run))
+  (test-run false))
