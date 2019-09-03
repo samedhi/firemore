@@ -15,7 +15,6 @@
 (def complete (atom false))
 
 (defmethod t/report [::t/default :end-run-tests] [m]
-  (println "This is being called")
   (when (cljs.test/successful? m)
     (reset! successful true))
   (reset! complete true))
