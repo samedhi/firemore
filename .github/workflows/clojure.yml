@@ -6,8 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    resolves: ["debug"]
-
     timeout-minutes: 5
 
     steps:
@@ -28,7 +26,3 @@ jobs:
       run: sleep 10s
     - name: Run tests
       run: node puppeteer-runner.js
-
-action "debug" {
-  uses: "actions/bin/debug@master"
-}
