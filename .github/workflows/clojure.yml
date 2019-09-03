@@ -14,6 +14,8 @@ jobs:
       run: lein cljsbuild once test
     - name: Serve the content
       run: python -m SimpleHTTPServer 3449 &
+    - name: Install Puppeteer
+      run: npm i puppeteer
     - name: Wait for server
       run: sleep 10s
     - name: Run tests
