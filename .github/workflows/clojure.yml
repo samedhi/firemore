@@ -14,8 +14,12 @@ jobs:
       run: lein deps
     - name: Compile test code
       run: lein cljsbuild once test
+    - name: Switch to content directory
+      run: cd resources/public/
     - name: Serve the content
       run: python -m SimpleHTTPServer 3449 &
+    - name: Switch back to previous directory
+      run: cd ../..
     - name: Install Puppeteer
       run: npm i puppeteer
     - name: Wait for server
