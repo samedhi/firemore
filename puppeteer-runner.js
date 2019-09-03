@@ -22,7 +22,6 @@ const puppeteer = require('puppeteer');
             }
         }
 
-        // firemore.test_runner.run();
         await loop_until_predicate_true(firemore.test_runner.is_complete);
 
         return firemore.test_runner.is_successful();
