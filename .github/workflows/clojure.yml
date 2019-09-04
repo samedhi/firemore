@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@
+    - uses: actions/checkout@v1
     - name: Compile test code
       run: lein cljsbuild once test
     - name: Serve the content
