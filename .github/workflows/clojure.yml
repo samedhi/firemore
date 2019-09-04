@@ -3,22 +3,26 @@ name: Clojure CI
 on: [push]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
-    timeout-minutes: 5
-
+    timeout-minutes: 3
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: lein deps
     - name: Compile test code
       run: lein cljsbuild once test
+    - name: Install Puppeteer
+      run: npm i puppeteer
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 2
+    steps:
     - name: Serve the content
       working-directory: ./resources/public
       run: python -m SimpleHTTPServer 3449 &
-    - name: Install Puppeteer
-      run: npm i puppeteer
     - name: Wait for server
       run: sleep 10s
     - name: Run tests
