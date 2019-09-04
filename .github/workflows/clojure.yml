@@ -20,11 +20,20 @@ jobs:
     - name: Run tests
       run: node puppeteer-runner.js
 
-  build-codox:
+  build-api-docs:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 2
     needs: test
     steps:
     - uses: actions/checkout@v1
-    - name: Build Codox
+    - name: Build API documentation
       run: lein codox
+
+  build-human-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: test
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build Human Readable documentation
+      run: lein run
