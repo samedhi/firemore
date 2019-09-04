@@ -5,13 +5,9 @@ on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
-
     timeout-minutes: 5
-
     steps:
-    - uses: actions/checkout@v1
-    - name: Install dependencies
-      run: lein deps
+    - uses: actions/checkout@
     - name: Compile test code
       run: lein cljsbuild once test
     - name: Serve the content
@@ -23,3 +19,12 @@ jobs:
       run: sleep 10s
     - name: Run tests
       run: node puppeteer-runner.js
+
+  build-codox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: test
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build Codox
+      run: lein codox
