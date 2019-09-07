@@ -4,7 +4,9 @@
    [clojure.data :as data]
    [clojure.set :as set]
    [firemore.config :as config]
-   [firemore.firestore :as firestore]))
+   [firemore.firestore :as firestore])
+  (:require-macros
+   [cljs.core.async.macros :refer [go-loop go]]))
 
 (enable-console-print!)
 
@@ -53,7 +55,7 @@
                  firestore/listen-db)
         {:keys [c unsubscribe] :as m2} (listen reference)
         output-path (prepend-output-path path)]
-    (async/go-loop []
+    (go-loop []
       (when-let [v (async/<! c)]
         (swap! atm assoc-in output-path v)
         (recur)))
