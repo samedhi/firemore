@@ -1,6 +1,9 @@
 name: Clojure CI
 
-on: [push]
+on:
+  push:
+    branches:    
+      - master
 
 jobs:
   test:
@@ -19,18 +22,6 @@ jobs:
       run: sleep 10s
     - name: Run tests
       run: node puppeteer-runner.js
-      
-  is-master:
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    on:
-      push:
-        # Sequence of patterns matched against refs/heads
-        branches:    
-          - master         # Push events on master branch
-    steps:
-    - name: Echo Master
-      run: echo "This is Master"
 
   build-codox:
     runs-on: ubuntu-latest
