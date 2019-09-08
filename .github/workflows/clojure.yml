@@ -20,13 +20,14 @@ jobs:
     - name: Run tests
       run: node puppeteer-runner.js
       
-  master:
+  is-master:
     runs-on: ubuntu-latest
     timeout-minutes: 1
     on:
       push:
+        # Sequence of patterns matched against refs/heads
         branches:    
-          - master
+          - master         # Push events on master branch
     steps:
     - name: Echo Master
       run: echo "This is Master"
@@ -34,7 +35,7 @@ jobs:
   build-codox:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: master
+    needs: is-master
     steps:
     - uses: actions/checkout@v1
     - name: Build Codox
