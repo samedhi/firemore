@@ -27,9 +27,9 @@ jobs:
       push:
         branches:    
         - master
-      steps:
-      - name: Echo Master
-      - run: echo "This is Master"
+    steps:
+    - name: Echo Master
+      run: echo "This is Master"
 
   build-codox:
     runs-on: ubuntu-latest
