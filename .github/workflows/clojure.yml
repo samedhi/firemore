@@ -19,11 +19,18 @@ jobs:
       run: sleep 10s
     - name: Run tests
       run: node puppeteer-runner.js
+      
+  master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    push:
+      branches:    
+        - master
 
   build-codox:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: test
+    needs: master
     steps:
     - uses: actions/checkout@v1
     - name: Build Codox
