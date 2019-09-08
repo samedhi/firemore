@@ -151,13 +151,13 @@
 
 (defn add-where-to-ref [ref query]
   (reduce
-   (fn [ref [k op v]] (.where ref k op v))
+   (fn [ref [k op v]] (.where ref (str k) op v))
    ref
    (:where query)))
 
 (defn add-order-to-ref [ref query]
   (reduce
-   (fn [ref [k direction]] (.orderBy ref k direction))
+   (fn [ref [k direction]] (.orderBy ref (str k) direction))
    ref
    (:order query)))
 
