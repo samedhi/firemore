@@ -23,9 +23,13 @@ jobs:
   master:
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    push:
-      branches:    
+    on:
+      push:
+        branches:    
         - master
+      steps:
+      - name: Echo Master
+      - run: echo "This is Master"
 
   build-codox:
     runs-on: ubuntu-latest
