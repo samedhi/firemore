@@ -26,7 +26,7 @@ jobs:
   build-codox:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: is-master
+    needs: test
     steps:
     - uses: actions/checkout@v1
     - name: Build Codox
