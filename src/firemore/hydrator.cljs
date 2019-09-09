@@ -49,7 +49,6 @@
 ;; having state machine be a side effect in a watch function attached to the
 ;; atom. Not good. Bad code. What better?
 (defn handle-added [m atm path reference]
-  (println "Creating observer for" path "->" reference)
   (let [listen (if (query? reference)
                  firestore/listen-collection-db
                  firestore/listen-db)

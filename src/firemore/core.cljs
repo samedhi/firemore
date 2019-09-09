@@ -183,25 +183,11 @@
 
 ;; watchers
 
-:path->reference
+(defn add! [atm path reference]
+  (hydrator/add! atm path reference))
 
-(defn hydrate
-  "Add functionality to atom `atm` to allow observation of the Firestore database.
-
-  Returns nil. Noop if atom is already hydrated. Adds a watch that causes atom to
-  automatically sync its :paths and :references root keys. :paths should be a
-  key value pair where the key is a path and the value is a reference. :paths can
-  have keys added and removed. :references will throw a error if you attempt to
-  modify them.
-
-  Note:
-  atom -> https://clojure.org/reference/atoms"
-  [atm]
-  )
-
-(defn unhydrate
-  "Removes functionality on `atm` that may have been added by `hydrate`."
-  [atm])
+(defn subtract! [atm path]
+  (hydrator/subtract! atm path))
 
 (defn watch-user
   "Add functionality to atom `atm` so that `:user` reflects latest value from `get-user`"
