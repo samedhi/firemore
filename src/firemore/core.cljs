@@ -135,14 +135,17 @@
   ;; authentication/user-chan
   )
 
+(defn user-atom []
+  "Return the atom matching the state of currently logged in user"
+  authentication/user-atom)
+
 (defn user
   "Returns the last value returned from user-chan."
   []
-  @authentication/user-atom)
+  @(user-atom))
 
-(defn login-anonymously!
-  "Log out any existing user, then log in a new anonymous user."
-  []
+(defn login-anonymously! []
+  "Iff currently logged out, log in a new anonymous user."
   (authentication/login-anonymously!))
 
 (defn uid
@@ -169,10 +172,9 @@
               (recur))))))
     c))
 
-(defn logout!
-  "Log out the currently logged in user (if any)."
-  []
-  )
+(defn logout! []
+  "Log out the any currently logged in user."
+  (authentication/logout!))
 
 (defn delete-user!
   "Deletes the currently logged in user from Firestore.
