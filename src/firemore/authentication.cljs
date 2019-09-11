@@ -29,3 +29,17 @@
 (defn logout!
   ([] (logout! FB))
   ([fb] (.signOut (firebase/auth fb))))
+
+(defn uid []
+  (let [c (async/chan)]
+    (if-let [uid (:uid @user-atom)]
+      (async/put! c uid)
+      (go
+        (login-anonymously!)
+        (loop []
+          (if-let [uid (:uid @user-atom)] 
+            (async/put! c uid)
+            (do
+              (async/<! (async/timeout 100))
+              (recur))))))
+    c))

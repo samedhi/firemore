@@ -160,18 +160,7 @@
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`"
   []
-  (let [c (async/chan)]
-    (if-let [uid (:uid (user))]
-      (async/put! c uid)
-      (go
-        (login-anonymously!)
-        (loop []
-          (if-let [uid (:uid (user))] 
-            (async/put! c uid)
-            (do
-              (async/<! (async/timeout 100))
-              (recur))))))
-    c))
+  (authentication/uid))
 
 (defn logout! []
   "Log out any currently logged in user."
