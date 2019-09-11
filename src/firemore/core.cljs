@@ -135,8 +135,9 @@
   ;; authentication/user-chan
   )
 
-(defn user-atom []
-  "Return the atom matching the state of currently logged in user"
+(defn user-atom
+  "Return the atom that reflects the state of currently logged in user"
+  []
   authentication/user-atom)
 
 (defn user
@@ -145,7 +146,7 @@
   @(user-atom))
 
 (defn login-anonymously! []
-  "Iff currently logged out, log in a new anonymous user."
+  "Log in a new anonymous user; noop if already logged in"
   (authentication/login-anonymously!))
 
 (defn uid
@@ -173,7 +174,7 @@
     c))
 
 (defn logout! []
-  "Log out the any currently logged in user."
+  "Log out any currently logged in user."
   (authentication/logout!))
 
 (defn delete-user!
