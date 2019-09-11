@@ -145,7 +145,7 @@
   []
   (authentication/login-anonymously!))
 
-(defn uid []
+(defn uid
   "Returns a channel that will have a uid put! upon it'
 
   If you are currently logged in, uid will be the uid of the currently logged
@@ -155,6 +155,7 @@
   Note:
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`"
+  []
   (let [c (async/chan)]
     (if-let [uid (:uid (user))]
       (async/put! c uid)
@@ -183,10 +184,21 @@
 
 ;; watchers
 
-(defn add! [atm path reference]
+(defn add!
+  "Sync the current value of `reference` at `path` within the `atm`
+
+  atm - A clojure atom.
+  path - a vector location within the `atm` where the Firestore `reference` will be written.
+  reference - a reference to a location in Firestore.
+
+  Note that the the {path reference} will show up under the :firemore key, and the
+  {path reference-value} will show up under the :firemore key in `atm`."
+  [atm path reference]
   (hydrator/add! atm path reference))
 
-(defn subtract! [atm path]
+(defn subtract!
+  "Remove the `path` from the `atm`"
+  [atm path]
   (hydrator/subtract! atm path))
 
 (defn watch-user
