@@ -66,7 +66,7 @@
        (sut/subtract! a [:hydrator])
        (done)))))
 
-#_(t/deftest test-hydrator-document
+(t/deftest test-hydrator-document
   (let [a (atom {})
         c (change-watcher a)]
     (t/async
@@ -79,11 +79,6 @@
            (t/is (= {:tokyo [:cities "TOK"]}
                     (:firemore m)))
            (t/is (= {:tokyo {}}
-                    (:firestore m))))
-         (let [m (async/<! c)]
-           (t/is (= {:tokyo [:cities "TOK"]}
-                    (:firemore m)))
-           (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
                     (:firestore m))))
          (let [m (async/<! c)]
            (t/is (= {:tokyo [:cities "TOK"]}
