@@ -3,6 +3,10 @@
   :url "inferno-8d188.web.app"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
+  :deploy-repositories {"clojars" {:url "https://clojars.org/repo"
+                                   :username :env/clojars_username
+                                   :password :env/clojars_password
+                                   :sign-releases false}}
   :dependencies [[compojure "1.6.1"]
                  [com.bhauman/cljs-test-display "0.1.1"]
                  [cryogen-markdown "0.1.11"]
