@@ -123,27 +123,29 @@
                   (:firestore m)))))
        (done)))))
 
-#_(t/deftest test-hydrator-collection
+(t/deftest test-hydrator-collection
   (let [a (atom {})
         c (change-watcher a)]
     (t/async
      done
      (async/go
-       (sut/add! a [:cities] [:cities])
-       (let [m (async/<! c)]
-         (t/is (= {:cities [:cities]}
-                  (:firemore m)))
-         (t/is (= {:cities []}
-                  (:firestore m))))
-       (let [m (async/<! c)]
-         (t/is (= {:cities [:cities]}
-                  (:firemore m)))
-         (t/is (= (count firestore-test/cities-fixture)
-                  (-> m :firestore :cities count))))
-       (sut/subtract! a [:cities])
-       (let [m (async/<! c)]
-         (t/is (= {}
-                  (:firemore m)))
-         (t/is (= {}
-                  (:firestore m))))
+       (t/testing "Start watching cities"
+         (sut/add! a [:cities] [:cities])
+         (let [m (async/<! c)]
+           (t/is (= {:cities [:cities]}
+                    (:firemore m)))
+           (t/is (= {:cities []}
+                    (:firestore m))))
+         (let [m (async/<! c)]
+           (t/is (= {:cities [:cities]}
+                    (:firemore m)))
+           (t/is (= (count firestore-test/cities-fixture)
+                    (-> m :firestore :cities count)))))
+       (t/testing "Stop watching cities"
+         (sut/subtract! a [:cities])
+         (let [m (async/<! c)]
+           (t/is (= {}
+                    (:firemore m)))
+           (t/is (= {}
+                    (:firestore m)))))
        (done)))))
