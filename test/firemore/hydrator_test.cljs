@@ -2,6 +2,8 @@
   (:require
    [cljs.core.async :as async]
    [cljs.test :as t :include-macros true]
+   [firemore.authentication :as authentication]
+   [firemore.config :as config]
    [firemore.hydrator :as sut]
    [firemore.firestore :as firestore]
    [firemore.firestore-test :as firestore-test]
@@ -16,43 +18,51 @@
        (async/put! c n)))
     c))
 
-(t/deftest hydrator-missing-document
-  (let [a (atom {})
-        c (change-watcher a)]
-    (t/async
-     done
-     (async/go
-       (sut/add! a [:hydrator] [:test-empty-collection "MISSING_DOC"])
-       (let [m (async/<! c)]
-         (t/is (= {:hydrator [:test-empty-collection "MISSING_DOC"]}
-                  (:firemore m)))
-         (t/is (= {:hydrator {}}
-                  (:firestore m))))
-       (let [m (async/<! c)]
-         (t/is (= {:hydrator [:test-empty-collection "MISSING_DOC"]}
-                  (:firemore m)))
-         (t/is (= {:hydrator {}}
-                  (:firestore m))))
+(t/deftest test-hydrator-missing-document
+  (t/async
+   done
+   (async/go
+     (let [a         (atom {})
+           c         (change-watcher a)
+           user-id   (async/<! (authentication/uid))
+           reference [:users user-id :test-hydrator-missing-documen "MISSING_DOC"]]
+       (sut/add! a [:hydrator] reference)
+       (t/testing "First {} is synchronously done by sut/add!"
+         (let [m (async/<! c)]
+           (t/is (= {:hydrator reference}
+                    (:firemore m)))
+           (t/is (= {:hydrator {}}
+                    (:firestore m)))))
+       (t/testing "Second config/NO_DOCUMENT is due to response from server"
+         (let [m (async/<! c)]
+           (t/is (= {:hydrator reference}
+                    (:firemore m)))
+           (t/is (= {:hydrator config/NO_DOCUMENT}
+                    (:firestore m)))))
        (sut/subtract! a [:hydrator])
        (done)))))
 
 (t/deftest test-hydrator-empty-collection
-  (let [a (atom {})
-        c (change-watcher a)]
-    (t/async
-     done
-     (async/go
-       (sut/add! a [:hydrator] [:test-empty-collection])
-       (let [m (async/<! c)]
-         (t/is (= {:hydrator [:test-empty-collection]}
-                  (:firemore m)))
-         (t/is (= {:hydrator []}
-                  (:firestore m))))
-       (let [m (async/<! c)]
-         (t/is (= {:hydrator [:test-empty-collection]}
-                  (:firemore m)))
-         (t/is (= {:hydrator []}
-                  (:firestore m))))
+  (t/async
+   done
+   (async/go
+     (let [a         (atom {})
+           c         (change-watcher a)
+           user-id   (async/<! (authentication/uid))
+           reference [:users user-id :test-hydrator-empty-collection]]
+       (sut/add! a [:hydrator] reference)
+       (t/testing "First [] is synchronously done by sut/add!"
+         (let [m (async/<! c)]
+           (t/is (= {:hydrator reference}
+                    (:firemore m)))
+           (t/is (= {:hydrator []}
+                    (:firestore m)))))
+       (t/testing "Second [] is due to response from server"
+         (let [m (async/<! c)]
+           (t/is (= {:hydrator reference}
+                    (:firemore m)))
+           (t/is (= {:hydrator []}
+                    (:firestore m)))))
        (sut/subtract! a [:hydrator])
        (done)))))
 
@@ -69,11 +79,6 @@
            (t/is (= {:tokyo [:cities "TOK"]}
                     (:firemore m)))
            (t/is (= {:tokyo {}}
-                    (:firestore m))))
-         (let [m (async/<! c)]
-           (t/is (= {:tokyo [:cities "TOK"]}
-                    (:firemore m)))
-           (t/is (= {:tokyo (firestore-test/cities-fixture "TOK")}
                     (:firestore m))))
          (let [m (async/<! c)]
            (t/is (= {:tokyo [:cities "TOK"]}
@@ -124,21 +129,23 @@
     (t/async
      done
      (async/go
-       (sut/add! a [:cities] [:cities])
-       (let [m (async/<! c)]
-         (t/is (= {:cities [:cities]}
-                  (:firemore m)))
-         (t/is (= {:cities []}
-                  (:firestore m))))
-       (let [m (async/<! c)]
-         (t/is (= {:cities [:cities]}
-                  (:firemore m)))
-         (t/is (= (count firestore-test/cities-fixture)
-                  (-> m :firestore :cities count))))
-       (sut/subtract! a [:cities])
-       (let [m (async/<! c)]
-         (t/is (= {}
-                  (:firemore m)))
-         (t/is (= {}
-                  (:firestore m))))
+       (t/testing "Start watching cities"
+         (sut/add! a [:cities] [:cities])
+         (let [m (async/<! c)]
+           (t/is (= {:cities [:cities]}
+                    (:firemore m)))
+           (t/is (= {:cities []}
+                    (:firestore m))))
+         (let [m (async/<! c)]
+           (t/is (= {:cities [:cities]}
+                    (:firemore m)))
+           (t/is (= (count firestore-test/cities-fixture)
+                    (-> m :firestore :cities count)))))
+       (t/testing "Stop watching cities"
+         (sut/subtract! a [:cities])
+         (let [m (async/<! c)]
+           (t/is (= {}
+                    (:firemore m)))
+           (t/is (= {}
+                    (:firestore m)))))
        (done)))))

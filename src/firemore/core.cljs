@@ -135,17 +135,21 @@
   ;; authentication/user-chan
   )
 
+(defn user-atom
+  "Return the atom that reflects the state of currently logged in user"
+  []
+  authentication/user-atom)
+
 (defn user
   "Returns the last value returned from user-chan."
   []
-  @authentication/user-atom)
+  @(user-atom))
 
-(defn login-anonymously!
-  "Log out any existing user, then log in a new anonymous user."
-  []
+(defn login-anonymously! []
+  "Log in a new anonymous user; noop if already logged in"
   (authentication/login-anonymously!))
 
-(defn uid []
+(defn uid
   "Returns a channel that will have a uid put! upon it'
 
   If you are currently logged in, uid will be the uid of the currently logged
@@ -155,23 +159,12 @@
   Note:
   channel -> `clojure.core.async/chan`
   put!    -> `clojure.core.async/put!`"
-  (let [c (async/chan)]
-    (if-let [uid (:uid (user))]
-      (async/put! c uid)
-      (go
-        (login-anonymously!)
-        (loop []
-          (if-let [uid (:uid (user))] 
-            (async/put! c uid)
-            (do
-              (async/<! (async/timeout 100))
-              (recur))))))
-    c))
-
-(defn logout!
-  "Log out the currently logged in user (if any)."
   []
-  )
+  (authentication/uid))
+
+(defn logout! []
+  "Log out any currently logged in user."
+  (authentication/logout!))
 
 (defn delete-user!
   "Deletes the currently logged in user from Firestore.
@@ -183,25 +176,22 @@
 
 ;; watchers
 
-:path->reference
+(defn add!
+  "Sync the current value of `reference` at `path` within the `atm`
 
-(defn hydrate
-  "Add functionality to atom `atm` to allow observation of the Firestore database.
+  atm - A clojure atom.
+  path - a vector location within the `atm` where the Firestore `reference` will be written.
+  reference - a reference to a location in Firestore.
 
-  Returns nil. Noop if atom is already hydrated. Adds a watch that causes atom to
-  automatically sync its :paths and :references root keys. :paths should be a
-  key value pair where the key is a path and the value is a reference. :paths can
-  have keys added and removed. :references will throw a error if you attempt to
-  modify them.
+  Note that the the {path reference} will show up under the :firemore key, and the
+  {path reference-value} will show up under the :firemore key in `atm`."
+  [atm path reference]
+  (hydrator/add! atm path reference))
 
-  Note:
-  atom -> https://clojure.org/reference/atoms"
-  [atm]
-  )
-
-(defn unhydrate
-  "Removes functionality on `atm` that may have been added by `hydrate`."
-  [atm])
+(defn subtract!
+  "Remove the `path` from the `atm`"
+  [atm path]
+  (hydrator/subtract! atm path))
 
 (defn watch-user
   "Add functionality to atom `atm` so that `:user` reflects latest value from `get-user`"

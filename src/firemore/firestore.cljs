@@ -151,13 +151,13 @@
 
 (defn add-where-to-ref [ref query]
   (reduce
-   (fn [ref [k op v]] (.where ref k op v))
+   (fn [ref [k op v]] (.where ref (str k) op v))
    ref
    (:where query)))
 
 (defn add-order-to-ref [ref query]
   (reduce
-   (fn [ref [k direction]] (.orderBy ref k direction))
+   (fn [ref [k direction]] (.orderBy ref (str k) direction))
    ref
    (:order query)))
 
@@ -225,14 +225,15 @@
          doc-fx (partial doc-handler c)
          fx (if query
               (fn [snapshot]
-                (.forEach (.docChanges snapshot #js {:includeMetadataChanges true})
+                (.forEach (.docChanges snapshot ;; TODO: #js {:includeMetadataChanges true}
+                                       )
                           (fn [change]
                             (doc-fx (.-doc change)
                                     ;; TODO: More of the same nonsense
                                     (= "removed" (.-type change))))))
               doc-fx)
          unsubscribe (.onSnapshot (if query (filter-by-query ref query) ref)
-                                  #js {:includeMetadataChanges true}
+                                  ;; TODO: #js {:includeMetadataChanges true}
                                   fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))

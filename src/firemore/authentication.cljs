@@ -23,7 +23,23 @@
 
 (defn login-anonymously!
   ([] (login-anonymously! FB))
-  ([fb] (login-anonymously! FB false))
-  ([fb force?]
-   (when (or force? (nil? @user-atom))
-     (.signInAnonymously (firebase/auth fb)))))
+  ([fb]
+   (.signInAnonymously (firebase/auth fb))))
+
+(defn logout!
+  ([] (logout! FB))
+  ([fb] (.signOut (firebase/auth fb))))
+
+(defn uid []
+  (let [c (async/chan)]
+    (if-let [uid (:uid @user-atom)]
+      (async/put! c uid)
+      (go
+        (login-anonymously!)
+        (loop []
+          (if-let [uid (:uid @user-atom)] 
+            (async/put! c uid)
+            (do
+              (async/<! (async/timeout 100))
+              (recur))))))
+    c))
