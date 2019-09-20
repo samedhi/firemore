@@ -42,3 +42,12 @@ jobs:
       run: lein run
     - name: Convert documentation to public url
       run: sed -i 's/http:\/\/localhost:8000\/src/https:\/\/raw.githubusercontent.com\/samedhi\/firemore\/master\/src/g' public/firemore-docs/posts-output/2019-06-26-README/index.html
+
+  build-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: test
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build Code
+      run: lein cljsbuild once prod

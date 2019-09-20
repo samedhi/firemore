@@ -17,7 +17,7 @@
                  [ring/ring-devel "1.7.1"]
                  [ring-server "0.5.0"]
                  [figwheel-sidecar "0.5.18"]]
-  :plugins [[lein-cljsbuild "1.1.6"]
+  :plugins [[lein-cljsbuild "1.1.7"]
             [lein-codox "0.10.7"]
             [lein-doo "0.1.10"]
             [lein-figwheel "0.5.13"]
@@ -26,7 +26,14 @@
   :clean-targets ^{:protect false} ["resource/public/js"]
   :codox {:language :clojurescript}
   :cljsbuild {:builds
-              [{:id "dev"
+              [{:id "prod"
+                :source-paths ["src"]
+                :compiler {:main firemore.core
+                           :optimizations :advanced
+                           :output-dir "resources/public/js/out-prod"
+                           :asset-path "js/out-prod"
+                           :output-to "resources/public/js/app.js"}}
+               {:id "dev"
                 :figwheel true
                 :source-paths ["src"]
                 :compiler {:main firemore.core
