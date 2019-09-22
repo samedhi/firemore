@@ -1,7 +1,10 @@
-{:title "Firemore Guide"
- :layout :post
+{:title "Guide"
+ :layout :page
  :klipse true
- :tags  ["documentation" "firemore" "firestore"]}
+ :tags  ["documentation" "firemore" "firestore"]
+ :navbar? true
+ :page-index 0
+ :home? true}
 
 1. [What is this?](#what_is_this)
 1. [Getting Started](#getting_started)
