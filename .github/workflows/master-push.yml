@@ -48,6 +48,6 @@ jobs:
     - name: Install firebase CLI
       run:  curl -sL firebase.tools | bash
     - name: Host documentation at firemore.org
-      with: # Set the secret as an input
+      env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
       run:  firebase deploy --project inferno-8d188
