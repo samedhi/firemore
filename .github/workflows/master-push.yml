@@ -23,7 +23,7 @@ jobs:
     - name: Run tests
       run: node puppeteer-runner.js
 
-build-codox:
+  build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: test
@@ -49,12 +49,3 @@ build-codox:
       run:  curl -sL firebase.tools | bash
     - name: Host documentation at firemore.org
       run:  firebase deploy
-
-  build-code:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: test
-    steps:
-    - uses: actions/checkout@v1
-    - name: Build Code
-      run: lein cljsbuild once prod
