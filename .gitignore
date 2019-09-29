@@ -21,3 +21,4 @@ pom.xml.asc
 /package-lock.json
 /node_modules
 /blog
+/.DS_Store
