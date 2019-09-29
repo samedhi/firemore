@@ -1,6 +1,6 @@
 (defproject org.clojars.samedhi/firemore "0.1.0"
   :description "A opinionated binding between clojurescript and Firebase"
-  :url "inferno-8d188.web.app"
+  :url "https://firemore.org"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
   :deploy-repositories {"clojars" {:url "https://clojars.org/repo"
