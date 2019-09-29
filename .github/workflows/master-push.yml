@@ -23,25 +23,32 @@ jobs:
     - name: Run tests
       run: node puppeteer-runner.js
 
-  build-codox:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: test
-    steps:
-    - uses: actions/checkout@v1
-    - name: Build Codox
-      run: lein codox
-
-  build-documentation:
+build-codox:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: test
     steps:
     - uses: actions/checkout@v1
     - name: Build documentation
-      run: lein run
+      run:  lein run
     - name: Convert documentation to public url
-      run: sed -i 's/http:\/\/localhost:8000\/src/https:\/\/raw.githubusercontent.com\/samedhi\/firemore\/master\/src/g' public/firemore-docs/posts-output/2019-06-26-README/index.html
+      run:  sed -i 's/http:\/\/localhost:8000\/src/https:\/\/raw.githubusercontent.com\/samedhi\/firemore\/master\/src/g' blog/posts-output/2019-06-26-README/index.html
+    - name: Build (Codox) API
+      run:  lein codox
+    - name: Copy API into documentation
+      run:  cp -r target/doc/* blog/pages/api/
+    - name: Build the test
+      run:  lein cljsbuild once test
+    - name: test.html -> index.html
+      run:  lein cljsbuild once test
+    - name: test.html -> index.html
+      run:  mv resources/public/test.html resources/public/index.html
+    - name: Copy the test into documentation
+      run:  cp -r resources/public/* blog/pages/test/
+    - name: Install firebase CLI
+      run:  curl -sL firebase.tools | bash
+    - name: Host documentation at firemore.org
+      run:  firebase deploy
 
   build-code:
     runs-on: ubuntu-latest

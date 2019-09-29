@@ -1,0 +1,89 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "cities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "`:country`",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "`:population`",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "`:population`",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "`:state`",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "`:state`",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "`:population`",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "`:state`",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "`:population`",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "population",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "state",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "cities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "population",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
