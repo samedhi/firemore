@@ -48,4 +48,4 @@ jobs:
     - name: Install firebase CLI
       run:  curl -sL firebase.tools | bash
     - name: Host documentation at firemore.org
-      run:  firebase deploy
+      run:  firebase deploy --project inferno-8d188
