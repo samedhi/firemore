@@ -29,10 +29,10 @@ jobs:
     needs: test
     steps:
     - uses: actions/checkout@v1
+    - name: Convert documentation to public url
+      run:  sed -i 's/http:\/\/localhost:8000\/src/https:\/\/raw.githubusercontent.com\/samedhi\/firemore\/master\/src/g' content/md/pages/guide.html
     - name: Build documentation
       run:  lein run
-    - name: Convert documentation to public url
-      run:  sed -i 's/http:\/\/localhost:8000\/src/https:\/\/raw.githubusercontent.com\/samedhi\/firemore\/master\/src/g' blog/posts-output/2019-06-26-README/index.html
     - name: Build (Codox) API
       run:  lein codox
     - name: Copy API into documentation
