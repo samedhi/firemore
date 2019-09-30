@@ -107,7 +107,7 @@
    done
    (async/go
      (let [user-id (async/<! (authentication/uid))
-           reference [:test "delete-me"]
+           reference [:users user-id :test "delete-me"]
            m {:string "delete-test"}]
        (t/is (nil? (async/<! (sut/set-db! reference m))))
        (t/is (= m  (async/<! (sut/get-db reference))))
