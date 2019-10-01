@@ -47,6 +47,11 @@ jobs:
       run:  cp -r resources/public/* blog/pages/test/
     - name: Install firebase CLI
       run:  curl -sL firebase.tools | bash
+    - name: Deploy to Clojars
+      env:
+        CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+        CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+      run:  lein deploy clojars
     - name: Host documentation at firemore.org
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
