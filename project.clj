@@ -7,7 +7,8 @@
                                    :username :env/clojars_username
                                    :password :env/clojars_password
                                    :sign-releases false}}
-  :dependencies [[compojure "1.6.1"]
+  :dependencies [[cljsjs/firebase "7.1.0-1"]
+                 [compojure "1.6.1"]
                  [com.bhauman/cljs-test-display "0.1.1"]
                  [cryogen-markdown "0.1.11"]
                  [cryogen-core "0.2.1"]
@@ -26,14 +27,7 @@
   :clean-targets ^{:protect false} ["resource/public/js"]
   :codox {:language :clojurescript}
   :cljsbuild {:builds
-              [{:id "prod"
-                :source-paths ["src"]
-                :compiler {:main firemore.core
-                           :optimizations :advanced
-                           :output-dir "resources/public/js/out-prod"
-                           :asset-path "js/out-prod"
-                           :output-to "resources/public/js/app.js"}}
-               {:id "dev"
+              [{:id "dev"
                 :figwheel true
                 :source-paths ["src"]
                 :compiler {:main firemore.core
@@ -47,10 +41,14 @@
                            :optimizations :whitespace
                            :output-dir "resources/public/js/out-test"
                            :output-to "resources/public/js/test.js"
-                           :pretty-print true}}]
-              :test-commands {"cljs-test" ["phantomjs"
-                                           "resources/public/runner.js"
-                                           "resources/public/test-phantom.html"]}}
+                           :pretty-print true}}
+               {:id "prod"
+                :source-paths ["src"]
+                :compiler {:main firemore.core
+                           :optimizations :advanced
+                           :output-dir "resources/public/js/out-dev-prod"
+                           :asset-path "js/out-dev-prod"
+                           :output-to "resources/public/js/app.js"}}]}
   :main cryogen.core
   :profiles {:dev {:dependencies [[cider/piggieback "0.4.1"]]
                    :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}}}

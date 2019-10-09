@@ -1,6 +1,9 @@
  (ns firemore.firebase
-  (:require
-   [firemore.config :as config]))
+   (:require
+    [firebase.app]
+    [firebase.auth]
+    [firebase.firestore]
+    [firemore.config :as config]))
 
 (def OPTS
   #js {:apiKey     config/FIREBASE_API_KEY
