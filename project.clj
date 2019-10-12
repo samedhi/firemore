@@ -7,7 +7,7 @@
                                    :username :env/clojars_username
                                    :password :env/clojars_password
                                    :sign-releases false}}
-  :dependencies [[cljsjs/firebase "7.1.0-1"]
+  :dependencies [[cljsjs/firebase "5.7.3-1"]
                  [compojure "1.6.1"]
                  [com.bhauman/cljs-test-display "0.1.1"]
                  [cryogen-markdown "0.1.11"]
