@@ -20,17 +20,7 @@ Main features include:
 
 To use firemore in an existing project, simply add this to your dependencies in project.clj ([lein](https://github.com/technomancy/leiningen)) or build.boot ([boot](https://github.com/boot-clj/boot)).
 
-!!!!! [firemore "x.y.z"] @clojars !!!!!!
-
-# <a id="usage"></a>Usage
-
-;; TODO: Transparently convert arrays to Sets and back. Auto index for containment?
-
-;; TODO: Transparently convert keywords to strings and back? Maybe write some checksum at front of keyword?
-
-;; TODO: Add in metadata whether value you see if realized or not.
-
-The following is a walkthrough of the main features of firemore.
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.samedhi/firemore.svg)](https://clojars.org/org.clojars.samedhi/firemore)
 
 ## References
 

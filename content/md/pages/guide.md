@@ -28,9 +28,7 @@ Firemore is a [clojurescript](https://clojurescript.org/) library for interactin
 
 Add the following to your dependencies in `project.clj` ([lein](https://github.com/technomancy/leiningen)) or `build.boot` ([boot](https://github.com/boot-clj/boot)) to use firemore in a existing project.
 
-;; This line does not work, haven't published to clojars yet.
-
-!!!!! [com.read-line/firemore "0.1.0"] @clojars !!!!!!
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.samedhi/firemore.svg)](https://clojars.org/org.clojars.samedhi/firemore)
 
 # Usage
 
