@@ -428,12 +428,6 @@ Remove the `path` from the `atm`
 
 ## Authentication
 
-> *Note: Why is the following section not interactive?*
->
-> Firebase limits the creation of over 100 users/per hour/per ip address ([Authentication Limits](https://firebase.google.com/docs/auth/limits)). This isn't a problem if most of your accounts are authenticated with a identity provider like google or facebook. This isn't a problem if you can expect your users to each have their own ip address. Actually, this isn't a problem in general unless you are interested in demonstrating users logging in and out as anonymous users. :)
->
-> Because of these reasons, I have chosen to make this portion from examples rather than working code. This alleviates the need to write more complex code on the server side to deal with abusive/misconfigured/overeager clients that exceed the above limit.
-
 Most apps require some way of authenticating a user.
 Firestore includes a fairly robust [Authentication System](https://firebase.google.com/docs/auth).
 Use of the built in authentication system will allow you to complete your project
