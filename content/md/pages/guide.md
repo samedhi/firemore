@@ -388,7 +388,8 @@ Or we can just do the following.
 
 (go
  (let [user-id (async/<! (firemore/uid))]
-  (doseq [stooge [:moe :larry :curly]]
+  (doseq [[stooge i] (map vector [:moe :larry :curly] (range))]
+   (firemore/write! [:users user-id :stooges (name stooge)] {:votes i})
    (set! (.-onclick (js/document.getElementById (str (name stooge) "-button")))
          (fn [event] 
           (.preventDefault event)
