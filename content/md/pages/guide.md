@@ -107,6 +107,15 @@ Ok, let's get things rolling. The firemore library is going to allow us to read,
 
 I was thinking about [Star Wars](https://www.starwars.com/) this morning, and I couldn't remember. Does Luke Skywalker have Force powers? Let's check!
 
+*Note: The following data exist at the `[:characters "luke"]` reference*
+```clj
+{:first-name  "Luke"
+ :last-name   "Skywalker"
+ :force-user? true
+ :hair-color  "blond"
+ :occupation  "farmboy"}
+```
+
 ```language-klipse
 (go
   (let [->output (->output-fx)
