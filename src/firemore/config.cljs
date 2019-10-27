@@ -52,4 +52,4 @@
 
 (def TIMESTAMP :firemore/timestamp)
 
-(def NO_DOCUMENT {})
+(def NO_DOCUMENT :firemore/no-document)

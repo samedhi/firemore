@@ -175,11 +175,14 @@
 (defn doc-upgrader
   ([doc] (doc-upgrader doc nil))
   ([doc removed?]
-   (with-meta
-     (clojurify (.data doc))
-     {:id (.-id doc)
-      :exist? (if removed? false (.-exists doc))
-      :pending? (.. doc -metadata -hasPendingWrites)})))
+   (if-let [exists? (.-exists doc)]
+     (with-meta
+       (clojurify (.data doc))
+       {:id (.-id doc)
+        :removed? removed?
+        :exists? exists?
+        :pending? (.. doc -metadata -hasPendingWrites)})
+     config/NO_DOCUMENT)))
 
 (defn get-db
   ([reference]
