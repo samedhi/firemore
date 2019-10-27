@@ -303,18 +303,18 @@ If you have only one `:where` clause predicate, it is fine to specify it as a
 single vector. So this is also equivalent to the above.
 
 ```clj
-[:cities {:where [":population" "<" 1000000]
-          :order [[":population" "asc"] [":state" "desc"]]
+[:cities {:where [:population "<" 1000000]
+          :order [[:population "asc"] [":state" "desc"]]
           :limit 2}]
 ```
 
 In a similar fashion, the `:order` values are expanded into 2 element
-vectors of `[<property> "asc"]` if they are specified as strings. So the following
+vectors of `[<property> "asc"]` if they are specified as strings or keywords. So the following
 is also equivalent to the above.
 
 ```clj
-[:cities {:where ["population" "<" 1000000]
-          :order ["population" ["state" "desc"]]
+[:cities {:where [:population "<" 1000000]
+          :order [:population ["state" "desc"]]
           :limit 2}]
 ```
 
