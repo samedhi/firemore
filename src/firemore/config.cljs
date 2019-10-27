@@ -16,7 +16,3 @@
 (def TIMESTAMP :firemore/timestamp)
 
 (def NO_DOCUMENT {})
-
-(def input-path (atom [:firemore]))
-
-(def output-path (atom [:firestore]))

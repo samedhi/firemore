@@ -3,12 +3,15 @@
    [cljs.core.async :as async]
    [clojure.data :as data]
    [clojure.set :as set]
-   [firemore.config :as config]
    [firemore.firestore :as firestore])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
 (enable-console-print!)
+
+(def input-path (atom [:firemore]))
+
+(def output-path (atom [:firestore]))
 
 (defn prepend [x y]
   (apply conj x y))
@@ -20,10 +23,10 @@
 ;; than one (input, output) tuple per cljs application. Revisit this if it turns out
 ;; your assumptions are incorrect.
 (defn prepend-input-path [path]
-  (prepend @config/input-path path))
+  (prepend @input-path path))
 
 (defn prepend-output-path [path]
-  (prepend @config/output-path path))
+  (prepend @output-path path))
 
 (defn handle-removed [m path]
   (when-let [reference (get-in m (prepend-input-path path))]
