@@ -35,7 +35,7 @@
 
 (def FIREBASE_API_KEY (grab-value "FIREBASE_API_KEY"))
 
-(def FIREBASE_PROJECT_ID (grab-value "FIREBASE_API_KEY"))
+(def FIREBASE_PROJECT_ID (grab-value "FIREBASE_PROJECT_ID"))
 
 ;; The following values are derived from FIREBASE_API_KEY and FIREBASE_PROJECT_ID
 
