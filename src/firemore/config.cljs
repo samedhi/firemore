@@ -16,7 +16,7 @@
 
 (def use-default-values (atom false))
 
-(let [unset-values (filter #(fn [[k v]] (string/blank? v)) provided-firebase-config)]
+(let [unset-values (filter (fn [[k v]] (string/blank? v)) provided-firebase-config)]
   (when-not (empty? unset-values)
     (reset! use-default-values true)
     (js/console.warn
