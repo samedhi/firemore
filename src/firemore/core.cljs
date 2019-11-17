@@ -77,6 +77,15 @@
     (-> c async/mult (async/tap finalizing-chan))
     finalizing-chan))
 
+(defn add!
+  "Adds the `document` to collection `reference` within the Firestore database.
+
+  Returns a channel. Creates a new id for `document`. Either
+  {:id <document-id>} or {:error <error-msg>} will then be placed upon the
+  channel. The channel will then be closed."
+  [reference document]
+  (firestore/add-db! reference document))
+
 (defn write!
   "Writes the `document` to `reference` within the Firestore database.
 
