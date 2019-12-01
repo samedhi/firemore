@@ -5,9 +5,12 @@
    [firemore.config :as config]
    [firemore.firebase :as firebase])
   (:require-macros
-   [cljs.core.async.macros :refer [go-loop go]]))
+   [cljs.core.async.macros :refer [go-loop go]]
+   [firemore.firestore-macros :refer [transact-db!]]))
 
 (def FB firebase/FB)
+
+(def ^:dynamic *transaction* nil)
 
 (defn ref
   ([path] (ref FB path))
@@ -114,25 +117,34 @@
       (async/put! c error)
       (async/close! c))))
   ([fx on-success on-failure]
-   (let [c (async/chan)]
-     (..
-      (fx)
-      (then (partial on-success c))
-      (catch (partial on-failure c)))
-     c)))
+   ;; TODO: This is where you might mark the entities in a transaction you have written
+   (if *transaction*
+     (fx)
+     (let [c (async/chan)]
+       (..
+        (fx)
+        (then (partial on-success c))
+        (catch (partial on-failure c)))
+       c))))
 
 (defn set-db!
   ([reference value] (set-db! FB reference value))
   ([fb reference value]
    (let [{:keys [id ref js-value]} (shared-db fb reference value)]
-     (promise->chan #(.set ref js-value)))))
+     (promise->chan
+      ;; TODO: Gotta be something better than this pattern
+      (if *transaction*
+        #(.set *transaction* ref js-value)
+        #(.set ref js-value))))))
 
 (defn add-db!
   ([reference value] (add-db! FB reference value))
   ([fb reference value]
    (let [{:keys [id ref js-value]} (shared-db fb reference value)]
      (promise->chan
-      #(.add ref js-value)
+      (if *transaction*
+        #(.add *transaction* ref js-value)
+        #(.add ref js-value))
       (fn [c docRef]
         (async/put! c {:id (.-id docRef)})
         (async/close! c))))))
@@ -141,13 +153,19 @@
   ([reference value] (update-db! FB reference value))
   ([fb reference value]
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
-     (promise->chan #(.update ref js-value)))))
+     (promise->chan
+      (if *transaction*
+        #(.update *transaction* ref js-value)
+        #(.update ref js-value))))))
 
 (defn delete-db!
   ([reference] (delete-db! FB reference))
   ([fb reference]
    (let [{:keys [ref]} (shared-db fb reference nil)]
-     (promise->chan #(.delete ref)))))
+     (promise->chan
+      (if *transaction*
+        #(.delete *transaction* ref)
+        #(.delete ref))))))
 
 (defn add-where-to-ref [ref query]
   (reduce
@@ -205,12 +223,6 @@
           (->> doc doc-upgrader (async/put! c))
           (async/close! c)))))))
 
-#_(async/go (let [c (get-db ["cities"])]
-              (loop []
-                (when-let [m (async/<! c)]
-                  (println (pr-str m))
-                  (recur)))))
-
 ;; TODO: This removed? argument is nonsense, but for some reason `exists` in the document
 ;; does not agree with "removed" from the change...
 (defn doc-handler
@@ -260,3 +272,28 @@
 
 (defn unlisten-db [{:keys [unsubscribe]}]
   (unsubscribe))
+
+#_(-> (transact-db!
+     [winston [:testing "winston"]
+      harold  [:testing "harold"]]
+     (let [summation (+ (:count winston) (:count harold))]
+       (set-db! [:testing "charles"] {:count summation})
+       (update-db! [:testing "winston"] {})
+       (update-db! [:testing "harold"] {})
+       (str "I set charles to " summation)))
+    ;; macroexpand
+    ;; pr-str
+    ;; js/console.log
+    )
+
+#_(transact-db!
+ ;; Do we want to save the actual paths?
+ [winston [:testing "winston"]
+  harold  [:testing "harold"]]
+ ;; TODO: So how do we allow for the case of needing a dynamic (within the transaction)
+ ;; number of reads? This limits you to a static number of reads in the bindings...
+ ;; Can I use a (goloop ...) as the body and return channels for any additional gets?
+ (doseq [[user id] [[winston "winston"] [harold "harold"]]]
+   (if (= :firemore/no-document user)
+     (set-db! [:testing id] {:count 0})
+     (update-db! [:testing id] {:count (-> user :count inc)}))))
