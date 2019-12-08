@@ -273,18 +273,22 @@
 (defn unlisten-db [{:keys [unsubscribe]}]
   (unsubscribe))
 
-#_(-> (transact-db!
-     [winston [:testing "winston"]
-      harold  [:testing "harold"]]
-     (let [summation (+ (:count winston) (:count harold))]
-       (set-db! [:testing "charles"] {:count summation})
-       (update-db! [:testing "winston"] {})
-       (update-db! [:testing "harold"] {})
-       (str "I set charles to " summation)))
-    ;; macroexpand
-    ;; pr-str
-    ;; js/console.log
-    )
+
+#_(go
+  (-> (transact-db!
+        [winston [:testing "winston"]
+         harold  [:testing "harold"]]
+        (let [summation (+ (:count winston) (:count harold))]
+          (set-db! [:testing "charles"] {:count summation})
+          (update-db! [:testing "winston"] {})
+          (update-db! [:testing "harold"] {})
+          (str "I set charles to " summation)))
+      async/<!
+      ;; macroexpand
+      pr-str
+      js/console.log
+      ))
+
 
 #_(transact-db!
  ;; Do we want to save the actual paths?
