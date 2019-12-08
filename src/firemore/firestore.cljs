@@ -282,11 +282,11 @@
 
 #_(go
   (-> (transact-db!
-        [winston [:testing "winston"]
-         harold  [:testing "harold"]]
-        (let [summation (+ (:count winston) (:count harold))]
-          (set-db! [:testing "charles"] {:count summation})
-          (str "I set charles to " summation)))
+       [{winston-count :count} [:testing "winston"]
+        {harold-count :count}  [:testing "harold"]]
+       (let [summation (+ winston-count harold-count)]
+         (set-db! [:testing "charles"] {:count summation})
+         (str "I set charles to " summation)))
       async/<!
       ;; macroexpand
       pr-str

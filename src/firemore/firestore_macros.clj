@@ -26,9 +26,9 @@
          `(let [path# ~expr]
             (.then
              (.get ~transaction (firemore.firestore/ref path#))
-             (fn [~sym]
+             (fn [doc#]
                (swap! ~reads conj path#)
-               (let [~sym (firemore.firestore/doc-upgrader ~sym)]
+               (let [~sym (firemore.firestore/doc-upgrader doc#)]
                  ~acc)))))
         `(let [~ret-chan (async/chan)
                ~reads (atom #{})]
