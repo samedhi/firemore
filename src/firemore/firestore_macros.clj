@@ -10,20 +10,28 @@
   "Reads 'bindings from database, executes body within transaction."
   [bindings & body]
   (let [transaction (gensym "transaction_")
-        ret-chan (gensym "return_")]
+        ret-chan (gensym "return_")
+        reads (gensym "reads_")]
     (loop [[[sym expr :as tuple] & remaining] (reverse (partition 2 bindings)) 
            acc `((fn []
-                   (binding [firemore.firestore/*transaction* ~transaction]
-                     ~@body)))]
+                   (binding [firemore.firestore/*transaction* ~transaction
+                             firemore.firestore/*transaction-unwritten-docs* ~reads]
+                     (let [result# ~@body]
+                       (doseq [path# (deref ~reads)]
+                         (firemore.firestore/update-db! path# {}))
+                       result#))))]
       (if tuple
         (recur
          remaining
-         `(.then
-           (.get ~transaction (firemore.firestore/ref ~expr))
-           (fn [~sym]
-             (let [~sym (firemore.firestore/doc-upgrader ~sym)]
-               ~acc))))
-        `(let [~ret-chan (async/chan)]
+         `(let [path# ~expr]
+            (.then
+             (.get ~transaction (firemore.firestore/ref path#))
+             (fn [~sym]
+               (swap! ~reads conj path#)
+               (let [~sym (firemore.firestore/doc-upgrader ~sym)]
+                 ~acc)))))
+        `(let [~ret-chan (async/chan)
+               ~reads (atom #{})]
            (.catch
             (.then
              (.runTransaction

@@ -12,6 +12,8 @@
 
 (def ^:dynamic *transaction* nil)
 
+(def ^:dynamic *transaction-unwritten-docs* nil)
+
 (defn ref
   ([path] (ref FB path))
   ([fb path]
@@ -127,6 +129,9 @@
         (catch (partial on-failure c)))
        c))))
 
+(defn disj-reference [reference]
+  (swap! *transaction-unwritten-docs* disj reference))
+
 (defn set-db!
   ([reference value] (set-db! FB reference value))
   ([fb reference value]
@@ -134,7 +139,7 @@
      (promise->chan
       ;; TODO: Gotta be something better than this pattern
       (if *transaction*
-        #(.set *transaction* ref js-value)
+        #(do (.set *transaction* ref js-value) (disj-reference reference))
         #(.set ref js-value))))))
 
 (defn add-db!
@@ -143,9 +148,10 @@
    (let [{:keys [id ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
-        #(.add *transaction* ref js-value)
+        #(do (.add *transaction* ref js-value) (disj-reference reference))
         #(.add ref js-value))
       (fn [c docRef]
+        (swap! *transaction-unwritten-docs* disj reference)
         (async/put! c {:id (.-id docRef)})
         (async/close! c))))))
 
@@ -155,7 +161,7 @@
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
-        #(.update *transaction* ref js-value)
+        #(do (.update *transaction* ref js-value) (disj-reference reference))
         #(.update ref js-value))))))
 
 (defn delete-db!
@@ -164,7 +170,7 @@
    (let [{:keys [ref]} (shared-db fb reference nil)]
      (promise->chan
       (if *transaction*
-        #(.delete *transaction* ref)
+        #(do (.delete *transaction* ref) (disj-reference reference))
         #(.delete ref))))))
 
 (defn add-where-to-ref [ref query]
@@ -280,8 +286,6 @@
          harold  [:testing "harold"]]
         (let [summation (+ (:count winston) (:count harold))]
           (set-db! [:testing "charles"] {:count summation})
-          (update-db! [:testing "winston"] {})
-          (update-db! [:testing "harold"] {})
           (str "I set charles to " summation)))
       async/<!
       ;; macroexpand
