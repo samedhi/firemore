@@ -278,30 +278,3 @@
 
 (defn unlisten-db [{:keys [unsubscribe]}]
   (unsubscribe))
-
-
-#_(go
-  (-> (transact-db!
-       [{winston-count :count} [:testing "winston"]
-        {harold-count :count}  [:testing "harold"]]
-       (let [summation (+ winston-count harold-count)]
-         (set-db! [:testing "charles"] {:count summation})
-         (str "I set charles to " summation)))
-      async/<!
-      ;; macroexpand
-      pr-str
-      js/console.log
-      ))
-
-
-#_(transact-db!
- ;; Do we want to save the actual paths?
- [winston [:testing "winston"]
-  harold  [:testing "harold"]]
- ;; TODO: So how do we allow for the case of needing a dynamic (within the transaction)
- ;; number of reads? This limits you to a static number of reads in the bindings...
- ;; Can I use a (goloop ...) as the body and return channels for any additional gets?
- (doseq [[user id] [[winston "winston"] [harold "harold"]]]
-   (if (= :firemore/no-document user)
-     (set-db! [:testing id] {:count 0})
-     (update-db! [:testing id] {:count (-> user :count inc)}))))
