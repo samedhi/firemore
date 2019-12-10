@@ -151,7 +151,6 @@
         #(do (.add *transaction* ref js-value) (disj-reference reference))
         #(.add ref js-value))
       (fn [c docRef]
-        (swap! *transaction-unwritten-docs* disj reference)
         (async/put! c {:id (.-id docRef)})
         (async/close! c))))))
 
