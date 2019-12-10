@@ -4,7 +4,9 @@
    [cljs.test :as t :include-macros true]
    [firemore.authentication :as authentication]
    [firemore.config :as config]
-   [firemore.firestore :as sut]))
+   [firemore.firestore :as sut])
+  (:require-macros
+   [firemore.firestore-macros :refer [transact-db!]]))
 
 (def cities-fixture
   {"SF" {:name "San Francisco"
@@ -129,6 +131,27 @@
        (t/is (= (merge m1 m2) (async/<! (sut/get-db reference))))
        (done)))))
 
+(t/deftest transaction-test
+  (t/async
+   done
+   (async/go
+     (let [user-id (async/<! (authentication/uid))
+           reference [:users user-id :test "luke"]]
+       (t/is
+        (=
+         "midichlorians count is 16200"
+         (-> (transact-db!
+              [{anakin-midichlorians :midichlorian} [:characters "anakin"] ;; 27700
+               {padme-midichlorians  :midichlorian} [:characters "padme"]] ;;  4700
+              (let [midichlorians-average (/ (+ padme-midichlorians anakin-midichlorians) 2)]
+                (sut/set-db! reference {:midichlorian midichlorians-average})
+                (str "midichlorians count is " midichlorians-average)))
+             async/<!
+             first)))
+       (t/is
+        (= 16200
+           (:midichlorian (async/<! (sut/get-db reference)))))
+       (done)))))
 
 (t/deftest listening-test
   (t/async
