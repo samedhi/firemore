@@ -5,9 +5,14 @@
    [firemore.config :as config]
    [firemore.firebase :as firebase])
   (:require-macros
-   [cljs.core.async.macros :refer [go-loop go]]))
+   [cljs.core.async.macros :refer [go-loop go]]
+   [firemore.firestore-macros :refer [transact-db!]]))
 
 (def FB firebase/FB)
+
+(def ^:dynamic *transaction* nil)
+
+(def ^:dynamic *transaction-unwritten-docs* nil)
 
 (defn ref
   ([path] (ref FB path))
@@ -114,25 +119,37 @@
       (async/put! c error)
       (async/close! c))))
   ([fx on-success on-failure]
-   (let [c (async/chan)]
-     (..
-      (fx)
-      (then (partial on-success c))
-      (catch (partial on-failure c)))
-     c)))
+   ;; TODO: This is where you might mark the entities in a transaction you have written
+   (if *transaction*
+     (fx)
+     (let [c (async/chan)]
+       (..
+        (fx)
+        (then (partial on-success c))
+        (catch (partial on-failure c)))
+       c))))
+
+(defn disj-reference [reference]
+  (swap! *transaction-unwritten-docs* disj reference))
 
 (defn set-db!
   ([reference value] (set-db! FB reference value))
   ([fb reference value]
    (let [{:keys [id ref js-value]} (shared-db fb reference value)]
-     (promise->chan #(.set ref js-value)))))
+     (promise->chan
+      ;; TODO: Gotta be something better than this pattern
+      (if *transaction*
+        #(do (.set *transaction* ref js-value) (disj-reference reference))
+        #(.set ref js-value))))))
 
 (defn add-db!
   ([reference value] (add-db! FB reference value))
   ([fb reference value]
    (let [{:keys [id ref js-value]} (shared-db fb reference value)]
      (promise->chan
-      #(.add ref js-value)
+      (if *transaction*
+        #(do (.add *transaction* ref js-value) (disj-reference reference))
+        #(.add ref js-value))
       (fn [c docRef]
         (async/put! c {:id (.-id docRef)})
         (async/close! c))))))
@@ -141,13 +158,19 @@
   ([reference value] (update-db! FB reference value))
   ([fb reference value]
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
-     (promise->chan #(.update ref js-value)))))
+     (promise->chan
+      (if *transaction*
+        #(do (.update *transaction* ref js-value) (disj-reference reference))
+        #(.update ref js-value))))))
 
 (defn delete-db!
   ([reference] (delete-db! FB reference))
   ([fb reference]
    (let [{:keys [ref]} (shared-db fb reference nil)]
-     (promise->chan #(.delete ref)))))
+     (promise->chan
+      (if *transaction*
+        #(do (.delete *transaction* ref) (disj-reference reference))
+        #(.delete ref))))))
 
 (defn add-where-to-ref [ref query]
   (reduce
@@ -204,12 +227,6 @@
         (fn [c doc]
           (->> doc doc-upgrader (async/put! c))
           (async/close! c)))))))
-
-#_(async/go (let [c (get-db ["cities"])]
-              (loop []
-                (when-let [m (async/<! c)]
-                  (println (pr-str m))
-                  (recur)))))
 
 ;; TODO: This removed? argument is nonsense, but for some reason `exists` in the document
 ;; does not agree with "removed" from the change...

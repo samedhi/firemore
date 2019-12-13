@@ -239,6 +239,29 @@ Note:
 put! -> clojure.core.async/put!
 ```
 
+## Transactions
+
+Firemore also supports [transactions](https://firebase.google.com/docs/firestore/manage-data/transactions). Transactions allow for atomic reads and writes within the Firestore database. Let us read the value at two documents and write them to a third document. We are reading the midichlorian count from Padme & Anakin and writing the midichlorian count back to Luke.
+
+```language-klipse
+(require-macros '[firemore.firestore-macros :refer [transact-db!]])
+
+(go
+  (let [->output (->output-fx)
+        user-id (async/<! (firemore/uid))]
+    (->> 
+     (transact-db!
+      [{anakin-midichlorians :midichlorian} [:characters "anakin"] ;; 27700
+       {padme-midichlorians  :midichlorian} [:characters "padme"]] ;;  4700
+      (let [midichlorians-average (/ (+ padme-midichlorians anakin-midichlorians) 2)]
+        (firemore/merge! [:users user-id :characters "luke"] {:midichlorian midichlorians-average})
+        (str "I set Lukes Midichlorian count to " midichlorians-average)))
+     async/<!
+     (->output "Transaction Result"))))
+     
+:done
+```
+
 ## Queries
 
 *Note: The following data exist at the `[:cities]` reference*
