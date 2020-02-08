@@ -2,7 +2,7 @@
 
 **Firemore** is a library for writing [clojurescript](https://clojurescript.org/) applications using [Google Firestore](https://cloud.google.com/firestore).
 
-Please go to [firemore.org](firemore.org) for the interactive version of this documentation.
+Please go to [firemore.org](https://firemore.org) for the interactive version of this documentation.
 
 Main features include:
 1. A direct API to the [Firestore Database](https://firebase.google.com/docs/firestore).
@@ -12,7 +12,7 @@ Main features include:
 
 # Do It Live!
 
-Please go to [firemore.org](firemore.org) for the interactive version of this documentation.
+Please go to [firemore.org](https://firemore.org) for the interactive version of this documentation.
 
 # Table of Contents
 1. [Getting Started](#getting_started)
