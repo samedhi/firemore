@@ -10,6 +10,10 @@ Main features include:
 1. A channels based API for getting and observing Firestore documents.
 1. A binding between the Firestore Cloud database and a local clojure atom (great for om/re-frame/reagent).
 
+# Do It Live!
+
+Please go to [firemore.org](firemore.org) for the interactive version of this documentation.
+
 # Table of Contents
 1. [Getting Started](#getting_started)
 1. [Usage](#usage)
