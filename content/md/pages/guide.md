@@ -1,4 +1,4 @@
-{:title "Guide"
+{:title "Firemore Guide"
  :layout :page
  :klipse true
  :tags  ["documentation" "firemore" "firestore"]
@@ -6,9 +6,15 @@
  :page-index 0
  :home? true}
 
-1. [What is this?](#what_is_this)
+1. [What is this?](#what_is_this?)
 1. [Getting Started](#getting_started)
 1. [Usage](#usage)
+    1. [References](#references)
+    1. [Reading & Writing](#reading_and_writing)
+    1. [Transactions](#transactions)
+    1. [Queries](#queries)
+    1. [Using Local State Atom](#using_local_state_atom)
+    1. [Authentication](#authentication)
 1. [API](#api)
 1. [Contributing](#contributing)
 1. [Credits](#credits)
@@ -95,7 +101,7 @@ Keywords (the symbols with the `:` prefixed on them) appear at first, third, fif
 
 A reference with even length refers to a document, while a reference with an odd length refers to a collection. So `[:users]` is a reference to the `users` collection. While `[:users "alovelace"]` is a reference to a document *within* the `users` collection.
 
-## Reading & Writing from Firestore
+## Reading and Writing
 
 Ok, let's get things rolling. The firemore library is going to allow us to read, write, and query documents in the Firestore database. So let's import it.
 
@@ -350,7 +356,7 @@ is also equivalent to the above.
           :limit 2}]
 ```
 
-## Build Local State Atom
+## Using Local State Atom
 
 Let's say you want a ordered list of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? You want a button you can click that cast a vote for each stooge, as well as a ordered list of stooges from highest to lowest vote. Here is the HTML below, followed by the actual implementation of the HTML.
 
