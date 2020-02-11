@@ -46,7 +46,7 @@ jobs:
     - name: Copy the test into documentation
       run:  cp -r resources/public/* blog/pages/test/
     - name: Install firebase CLI
-      run:  curl -vL https://firebase.tools | bash
+      run:  npm install -g firebase-tools
     - name: Deploy to Clojars
       env:
         CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
