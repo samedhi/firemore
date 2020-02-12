@@ -33,19 +33,19 @@ To use firemore in an existing project, add this to your dependencies in project
 | What?                                                                                                                                        | Why?                         |
 |----------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
 | [![Actions Status](https://github.com/samedhi/firemore/workflows/Run%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)         | Do the test pass?            |
-| [![Actions Status](HTTP://github.com/samedhi/firemore/workflows/Periodic%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)    | Do the test pass right now?  |
+| [![Actions Status](HTTP://github.com/samedhi/firemore/workflows/Periodic%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)     | Do the test pass right now?  |
 | [![Actions Status](https://github.com/samedhi/firemore/workflows/Master%20on%20Push/badge.svg)](https://github.com/samedhi/firemore/actions) | Did master deploy correctly? |
 
 # <a id="usage"></a>Usage
 
 ## Example
-[https://firemore.org](https://firemore.org) contains interactive code demonstrating most features; much thanks to [https://github.com/viebel/klipse](Klipse) for making this possible.
+[firemore.org](https://firemore.org) contains interactive code demonstrating most features; much thanks to [Klipse](https://github.com/viebel/klipse) for making this possible.
 
 ## API
-[https://firemore.org/pages/api/] API for most recent version
+[API for most recent version](https://firemore.org/pages/api/)
 
 ## Test 
-[https://firemore.org/pages/test/] Allows you to run the test directly in your browser
+[Run the test directly in your browser](https://firemore.org/pages/test/)
 
 # <a id="contributing"></a>Contributing
 

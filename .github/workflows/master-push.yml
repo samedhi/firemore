@@ -55,4 +55,4 @@ jobs:
     - name: Host documentation at firemore.org
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-      run:  firebase deploy --project inferno-8d188
+      run:  sudo firebase deploy --project inferno-8d188
