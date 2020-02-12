@@ -28,6 +28,13 @@ To use firemore in an existing project, simply add this to your dependencies in 
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.samedhi/firemore.svg)](https://clojars.org/org.clojars.samedhi/firemore)
 
+## Additional Statuses
+
+| What?                                                                                                                                        | Why?                            |
+|---------------------------------------------------------------------------------------------------------------------------------------------:|---------------------------------|
+| [![Actions Status](https://github.com/samedhi/firemore/workflows/Run%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)         | Do the test pass?               |
+| [![Actions Status](https://github.com/samedhi/firemore/workflows/Periodic%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)    | Are the test pass right now?    |
+| [![Actions Status](https://github.com/samedhi/firemore/workflows/Master%20on%20Push/badge.svg)](https://github.com/samedhi/firemore/actions) | Did master deploy correctly?    |
 ## References
 
 Read the documentation on [documents, collections,
