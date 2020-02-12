@@ -6,27 +6,27 @@ on:
       - master
 
 jobs:
-  # test:
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 5
-  #   steps:
-  #   - uses: actions/checkout@v1
-  #   - name: Compile test code
-  #     run: lein cljsbuild once test
-  #   - name: Serve the content
-  #     working-directory: ./resources/public
-  #     run: python -m SimpleHTTPServer 3449 &
-  #   - name: Install Puppeteer
-  #     run: npm i puppeteer
-  #   - name: Wait for server
-  #     run: sleep 10s
-  #   - name: Run tests
-  #     run: node puppeteer-runner.js
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v1
+    - name: Compile test code
+      run: lein cljsbuild once test
+    - name: Serve the content
+      working-directory: ./resources/public
+      run: python -m SimpleHTTPServer 3449 &
+    - name: Install Puppeteer
+      run: npm i puppeteer
+    - name: Wait for server
+      run: sleep 10s
+    - name: Run tests
+      run: node puppeteer-runner.js
 
   build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # needs: test
+    needs: test
     steps:
     - uses: actions/checkout@v1
     - name: Convert documentation to public url
@@ -47,11 +47,11 @@ jobs:
       run:  cp -r resources/public/* blog/pages/test/
     - name: Install firebase CLI
       run:  npm install firebase-tools
-    # - name: Deploy to Clojars
-    #   env:
-    #     CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
-    #     CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
-    #   run:  lein deploy clojars
+    - name: Deploy to Clojars
+      env:
+        CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+        CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+      run:  lein deploy clojars
     - name: Host documentation at firemore.org
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

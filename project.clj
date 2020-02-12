@@ -1,4 +1,4 @@
-(defproject org.clojars.samedhi/firemore "0.3.7"
+(defproject org.clojars.samedhi/firemore "0.3.8"
   :description "A opinionated binding between clojurescript and Firebase"
   :url "https://firemore.org"
   :license {:name "MIT License"
