@@ -33,7 +33,7 @@ To use firemore in an existing project, add this to your dependencies in project
 | What?                                                                                                                                        | Why?                         |
 |----------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|
 | [![Actions Status](https://github.com/samedhi/firemore/workflows/Run%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)         | Do the test pass?            |
-| [![Actions Status](HTTP://github.com/samedhi/firemore/workflows/Periodic%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)     | Do the test pass right now?  |
+| [![Actions Status](https://github.com/samedhi/firemore/workflows/Periodic%20Test/badge.svg)](https://github.com/samedhi/firemore/actions) | Do the test pass right now?  |
 | [![Actions Status](https://github.com/samedhi/firemore/workflows/Master%20on%20Push/badge.svg)](https://github.com/samedhi/firemore/actions) | Did master deploy correctly? |
 
 # <a id="usage"></a>Usage
