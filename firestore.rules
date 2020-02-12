@@ -2,16 +2,28 @@ rules_version = '2';
 
 service cloud.firestore {
     match /databases/{database}/documents {
+    
+    		function unmodified(){
+        	return request.resource.data == getAfter(request.path).data
+        }
+        
         match /cities/{city} {
             allow read: if request.auth.uid != null;
         }
 
         match /characters/{character} {
             allow read: if request.auth.uid != null;
+            allow create: if false;
+            allow update: if unmodified();
+            allow delete: if false;
         }
 
         match /users/{userId}/{document=**} {
             allow read, write: if request.auth.uid == userId;
+        }
+        
+        match /testing/{document=**} {
+            allow read, write;
         }
     }
 }
