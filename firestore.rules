@@ -8,11 +8,11 @@ service cloud.firestore {
         }
         
         match /cities/{city} {
-            allow read: if request.auth.uid != null;
+            allow read;
         }
 
         match /characters/{character} {
-            allow read: if request.auth.uid != null;
+            allow read;
             allow create: if false;
             allow update: if unmodified();
             allow delete: if false;
