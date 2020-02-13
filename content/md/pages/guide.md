@@ -260,7 +260,7 @@ Firemore also supports [transactions](https://firebase.google.com/docs/firestore
       [{anakin-midichlorians :midichlorian} [:characters "anakin"] ;; 27700
        {padme-midichlorians  :midichlorian} [:characters "padme"]] ;;  4700
       (let [midichlorians-average (/ (+ padme-midichlorians anakin-midichlorians) 2)]
-        (firemore/merge! [:users user-id :characters "luke"] {:midichlorian midichlorians-average})
+        (firemore/write! [:users user-id :characters "luke-midi"] {:midichlorian midichlorians-average})
         (str "I set Lukes Midichlorian count to " midichlorians-average)))
      async/<!
      (->output "Transaction Result"))))
