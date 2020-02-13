@@ -32,14 +32,11 @@
 
 (defn uid []
   (let [c (async/chan)]
-    (if-let [uid (:uid @user-atom)]
-      (async/put! c uid)
-      (go
-        (login-anonymously!)
-        (loop []
-          (if-let [uid (:uid @user-atom)] 
-            (async/put! c uid)
-            (do
-              (async/<! (async/timeout 100))
-              (recur))))))
+    (go-loop []
+      (if-let [{:keys [uid]} @user-atom]
+        (async/put! c uid)
+        (do
+          (login-anonymously!)
+          (async/<! (async/timeout 1000))
+          (recur))))
     c))
