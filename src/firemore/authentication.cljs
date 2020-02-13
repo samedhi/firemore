@@ -10,6 +10,8 @@
 
 (def FB firebase/FB)
 
+(def signing-in? (atom false))
+
 (def user-atom (atom nil))
 
 (defn user-change-handler [js-user]
@@ -24,9 +26,9 @@
 (defn login-anonymously!
   ([] (login-anonymously! FB))
   ([fb]
-   (when-not @user-atom
+   (when-not @signing-in?
      (.signInAnonymously (firebase/auth fb))
-     (reset! user-atom {}))))
+     (reset! signing-in? true))))
 
 (defn logout!
   ([] (logout! FB))
