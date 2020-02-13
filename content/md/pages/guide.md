@@ -358,53 +358,57 @@ is also equivalent to the above.
 
 ## Using Local State Atom
 
-Let's say you want a ordered list of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? You want a button you can click that cast a vote for each stooge, as well as a ordered list of stooges from highest to lowest vote. Here is the HTML below, followed by the actual implementation of the HTML.
+Let's say you want a ordered list of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? You want a per stooge button that lets you vote for each stooge, as well as a ordered list of stooges from highest to lowest vote. The HTML below is printed and then rendered immediately following.
 
-```html
-<form>
-    <fieldset>
-        <legend> Best Stooge Official Ranking </legend>
-        [<span id="ordered-stooges"></span>]
-        <p>
-            <span>Vote Moe:</span> 
-            <button id="moe-button">Vote</button> 
-            [<span id="moe-votes">0</span>]
-        </p>
-        <p>
-            <span>Vote Larry:</span> 
-            <button id="larry-button">Vote</button> 
-            [<span id="larry-votes">0</span>]
-        </p>
-        <p>
-            <span>Vote Curly:</span> 
-            <button id="curly-button">Vote</button> 
-            [<span id="curly-votes">0</span>]
-        </p>
-    </fieldset>
-</form>
+```markdown
+### Best Stooge Official Ranking
+
+<span id="ordered-stooges" style="font-size: 2em">Loading...</span>
+
+<table>
+ <tbody class="stooge-table">
+  <tr>
+   <th> Vote for Moe </th>
+   <th> <button id="moe-button" style="margin: 0.5em 1em">Vote</button> </th>
+   <th> <span id="moe-votes">-1</span> </th>
+  </tr>
+  <tr>
+   <th> Vote for Larry </th>
+   <th> <button id="larry-button" style="margin: 0.5em 1em">Vote</button> </th>
+   <th> <span id="larry-votes">-1</span> </th>
+  </tr>
+  <tr>
+   <th> Vote for Curly </th>
+   <th> <button id="curly-button" style="margin: 0.5em 1em">Vote</button> </th>
+   <th> <span id="curly-votes">-1</span> </th>
+  </tr>
+ </tbody>
+</table>
 ```
 
-<form>
- <fieldset>
-  <legend> Best Stooge Official Ranking </legend>
-  <span id="ordered-stooges"></span>
-  <p>
-   <span>Vote Moe:</span> 
-   <button id="moe-button">Vote</button> 
-   [<span id="moe-votes">0</span>]
-  </p>
-  <p>
-   <span>Vote Larry:</span> 
-   <button id="larry-button">Vote</button> 
-   [<span id="larry-votes">0</span>]
-  </p>
-  <p>
-   <span>Vote Curly:</span> 
-   <button id="curly-button">Vote</button> 
-   [<span id="curly-votes">0</span>]
-  </p>
- </fieldset>
-</form>
+### Best Stooge Official Ranking
+
+<span id="ordered-stooges" style="font-size: 2em">Loading...</span>
+
+<table>
+ <tbody class="stooge-table">
+  <tr>
+   <th> Vote for Moe </th>
+   <th> <button id="moe-button" style="margin: 0.5em 1em">Vote</button> </th>
+   <th> <span id="moe-votes">-1</span> </th>
+  </tr>
+  <tr>
+   <th> Vote for Larry </th>
+   <th> <button id="larry-button" style="margin: 0.5em 1em">Vote</button> </th>
+   <th> <span id="larry-votes">-1</span> </th>
+  </tr>
+  <tr>
+   <th> Vote for Curly </th>
+   <th> <button id="curly-button" style="margin: 0.5em 1em">Vote</button> </th>
+   <th> <span id="curly-votes">-1</span> </th>
+  </tr>
+ </tbody>
+</table>
 
 With our current knowledge, we will need at least 4 observers to the Firestore database. One observer for each stooge (3), plus one observer for the list of stooges sorted by the number of votes they have received. We will in addition need to create a state machine that takes the result from each observer and places it within the `<stooge>-votes` element, as well as creating a closure to save the valu so that we can send the incremented value to the server upon button clicks. That is a good amount of work.
 
@@ -420,7 +424,7 @@ Or we can just do the following.
   (set-by-id! "moe-votes" (get-in n [:firestore :moe :votes] 0))
   (set-by-id! "larry-votes" (get-in n [:firestore :larry :votes] 0))
   (set-by-id! "curly-votes" (get-in n [:firestore :curly :votes] 0))
-  (set-by-id! "ordered-stooges" (map #(-> % meta :id) (get-in n [:firestore :ordered-stooges] []))))
+  (set-by-id! "ordered-stooges" (clojure.string/join " > " (map #(-> % meta :id) (get-in n [:firestore :ordered-stooges])))))
 
 (add-watch app :update-stooge-values watcher)
 
