@@ -13,9 +13,9 @@
 (def user-atom (atom nil))
 
 (defn user-change-handler [js-user]
-  (reset!
-   user-atom
-   (when js-user
+  (when js-user
+    (reset!
+     user-atom
      {:anonymous? (.-isAnonymous js-user)
       :uid        (.-uid js-user)})))
 
@@ -24,7 +24,9 @@
 (defn login-anonymously!
   ([] (login-anonymously! FB))
   ([fb]
-   (.signInAnonymously (firebase/auth fb))))
+   (when-not @user-atom
+     (.signInAnonymously (firebase/auth fb))
+     (reset! user-atom {}))))
 
 (defn logout!
   ([] (logout! FB))
@@ -33,7 +35,7 @@
 (defn uid []
   (let [c (async/chan)]
     (go-loop []
-      (if-let [{:keys [uid]} @user-atom]
+      (if-let [uid (:uid @user-atom)]
         (async/put! c uid)
         (do
           (login-anonymously!)

@@ -415,32 +415,40 @@ With our current knowledge, we will need at least 4 observers to the Firestore d
 Or we can just do the following. 
 
 ```language-klipse
+;; The app that holds our state
 (def app (atom {}))
 
 (defn set-by-id! [id v]
   (set! (.-textContent (js/document.getElementById id)) v))
 
+;; writes new value to our 4 separate <span>'s
 (defn watcher [_ _ _ n]
-  (set-by-id! "moe-votes" (get-in n [:firestore :moe :votes] 0))
-  (set-by-id! "larry-votes" (get-in n [:firestore :larry :votes] 0))
-  (set-by-id! "curly-votes" (get-in n [:firestore :curly :votes] 0))
-  (set-by-id! "ordered-stooges" (clojure.string/join " > " (map #(-> % meta :id) (get-in n [:firestore :ordered-stooges])))))
+  (set-by-id! "moe-votes" (get-in n [:firestore "moe" :votes]))
+  (set-by-id! "larry-votes" (get-in n [:firestore "larry" :votes]))
+  (set-by-id! "curly-votes" (get-in n [:firestore "curly" :votes]))
+  (set-by-id! "ordered-stooges" 
+    (clojure.string/join " > " 
+      (map #(-> % meta :id) (get-in n [:firestore :ordered-stooges])))))
 
+;; on every change to app, call watcher with the newest value of app
 (add-watch app :update-stooge-values watcher)
 
 (go
  (let [user-id (async/<! (firemore/uid))]
-  (doseq [[stooge i] (map vector [:moe :larry :curly] (range))]
-   (firemore/write! [:users user-id :stooges (name stooge)] {:votes i})
-   (set! (.-onclick (js/document.getElementById (str (name stooge) "-button")))
+  (doseq [[stooge i] (map vector ["moe" "larry" "curly"] (range))]
+   ;; Give every stooge a initial vote count
+   (async/<! (firemore/write! [:users user-id :stooges stooge] {:votes i}))
+   ;; Register a event click handler for every vote button
+   (set! (.-onclick (js/document.getElementById (str stooge "-button")))
          (fn [event] 
           (.preventDefault event)
           (let [votes (get-in @app [:firestore stooge :votes] 0)]
-           (firemore/write! [:users user-id :stooges (name stooge)] {:votes (inc votes)})))))
+           (firemore/write! [:users user-id :stooges stooge] {:votes (inc votes)})))))
            
-  (firemore/add! app [:moe]   [:users user-id :stooges "moe"])
-  (firemore/add! app [:larry] [:users user-id :stooges "larry"])
-  (firemore/add! app [:curly] [:users user-id :stooges "curly"])
+  ;; bind keys in the app to specific references in firestore
+  (firemore/add! app ["moe"]   [:users user-id :stooges "moe"])
+  (firemore/add! app ["larry"] [:users user-id :stooges "larry"])
+  (firemore/add! app ["curly"] [:users user-id :stooges "curly"])
   (firemore/add! app [:ordered-stooges] [:users user-id :stooges {:order [[":votes" "desc"]]}])))
 
 :done
