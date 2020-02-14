@@ -21,4 +21,4 @@ jobs:
     - name: Wait for server
       run: sleep 10s
     - name: Run tests
-      run: node puppeteer-runner.js
+      run: node puppeteer-runner.js || node puppeteer-runner.js || node puppeteer-runner.js
