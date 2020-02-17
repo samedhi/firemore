@@ -1,4 +1,4 @@
-# firemore
+# Firemore
 
 **Firemore** is a library for writing [clojurescript](https://clojurescript.org/) applications using [Google Firestore](https://cloud.google.com/firestore).
 
@@ -14,15 +14,7 @@ Main features include:
 
 Please go to [firemore.org](https://firemore.org) for the interactive version of this documentation.
 
-# Table of Contents
-1. [Getting Started](#getting_started)
-1. [Usage](#usage)
-1. [API](#api)
-1. [Contributing](#contributing)
-1. [Credits](#credits)
-1. [License](#license)
-
-# <a id="getting_started"></a>Getting Started
+# Getting Started
 
 To use firemore in an existing project, add this to your dependencies in project.clj ([lein](https://github.com/technomancy/leiningen)) or build.boot ([boot](https://github.com/boot-clj/boot)).
 
@@ -36,9 +28,9 @@ To use firemore in an existing project, add this to your dependencies in project
 | [![Actions Status](https://github.com/samedhi/firemore/workflows/Periodic%20Test/badge.svg)](https://github.com/samedhi/firemore/actions)    | Do the test pass right now?  |
 | [![Actions Status](https://github.com/samedhi/firemore/workflows/Master%20on%20Push/badge.svg)](https://github.com/samedhi/firemore/actions) | Did master deploy correctly? |
 
-# <a id="usage"></a>Usage
+# Usage
 
-## Example
+## Interactive Examples
 [firemore.org](https://firemore.org) contains interactive code demonstrating most features; much thanks to [Klipse](https://github.com/viebel/klipse) for making this possible.
 
 ## API
@@ -47,14 +39,14 @@ To use firemore in an existing project, add this to your dependencies in project
 ## Test 
 [Run the test directly in your browser](https://firemore.org/pages/test/)
 
-# <a id="contributing"></a>Contributing
+# Contributing
 
 Pull Request are always welcome and appreciated. If you want to discuss firemore, I am available most readily:
 1. On [clojurians.slack.com under #firemore](https://clojurians.slack.com/messages/C073DKH9P/).
 1. Through the [issue tracking system](https://github.com/samedhi/firemore/issues).
 1. By email at stephen@read-line.com .
 
-# <a id="credits"></a>Credits
+# Credits
 
 [Stephen Cagle](https://samedhi.github.io/) is a Senior Software Engineer at [Dividend Finance](https://www.dividendfinance.com/) in San Francisco, CA. He is the original (currently only, but always accepting PRs!) creator/maintainer of firemore.
 [@github](https://github.com/samedhi)
@@ -62,7 +54,7 @@ Pull Request are always welcome and appreciated. If you want to discuss firemore
 
 ![Man (Stephen Cagle) holding beer & small dog (Chihuahua)](asset/img/stephen_and_nugget.jpg)
 
-# <a id="License"></a>License
+# License
 
 MIT License
 
