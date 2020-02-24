@@ -32,7 +32,6 @@ const puppeteer = require('puppeteer');
     await browser.close();
 
     if(!is_successful){
-        console.log("FAAAILLIUUURE");
         process.exit(1);
     }
     // await page.screenshot({path: 'puppeteer_result.png'});

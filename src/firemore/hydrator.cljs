@@ -30,7 +30,6 @@
 
 (defn handle-removed [m path]
   (when-let [reference (get-in m (prepend-input-path path))]
-    (println "Destroying observer for" path "->" reference)
     (-> reference meta :unsubscribe (apply []))))
 
 (defn subtract [m path]
