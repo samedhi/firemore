@@ -232,13 +232,13 @@
 
 ;; TODO - Can't figure out why this test isn't stable
 
-#_(t/deftest listen-collection-db-test
+#_(t/deftest listen-to-collection-test
   (t/async
    done
    (async/go
      ;; Clear out the TEST city in case it is still there
      (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-collection-db [:cities])]
+     (let [{:keys [c unsubscribe]} (sut/listen-to-collection [:cities])]
        ;; Get all the standard cities
        (t/is (= (->> cities-fixture vals (map :name) set)
                 (->> (async/<! c) (map :name) set)))

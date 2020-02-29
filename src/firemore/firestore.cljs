@@ -266,8 +266,8 @@
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
 
-(defn listen-collection-db
-  ([reference] (listen-collection-db FB reference))
+(defn listen-to-collection
+  ([reference] (listen-to-collection FB reference))
   ([fb reference]
    (let [{:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
