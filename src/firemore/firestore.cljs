@@ -14,6 +14,8 @@
 
 (def ^:dynamic *transaction-unwritten-docs* nil)
 
+(def server-timestamp (.serverTimestamp js/firebase.firestore.FieldValue))
+
 (defn ref
   "Convert a firemore reference to a firebase reference"
   ([path] (ref FB path))
@@ -29,16 +31,18 @@
          (recur ps (not collection?) new-obj))))))
 
 (defn str->keywordize
-  "Converts string into a keyword"
+  "If s begins with ':' then convert into a keyword, else returns 's"
   {:pre [(string? s)]}
   [s]
-  (as-> s $
-    (subs $ 1)
-    (string/split $ "/")
-    (apply keyword $)))
+  (if (= (subs s 0 1) ":")
+    (as-> s $
+      (subs $ 1)
+      (string/split $ "/")
+      (apply keyword $))
+    s))
 
 (defn keywordize->str
-  "Convert keyword into a string"
+  "Mirror function for str->keywordize"
   {:pre [(keyword? k)]}
   [k]
   (str k))
@@ -52,12 +56,13 @@
    {}
    (js->clj json-document)))
 
-(defn replace-timestamp [m]
+(defn replace-timestamp
+  "Replace `config/TIMESTAMP (keyword) with firebase Server Timestamp"
+  [m]
   (reduce-kv
    (fn [m k v]
      (if (= v config/TIMESTAMP)
-       (let [ts (.serverTimestamp js/firebase.firestore.FieldValue)]
-         (assoc m k ts))
+       (assoc m k server-timestamp)
        m))
    m
    m))
