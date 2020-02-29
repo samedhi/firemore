@@ -16,6 +16,11 @@
 
 (def server-timestamp (.serverTimestamp js/firebase.firestore.FieldValue))
 
+(defn disj-reference
+  "Remove 'reference from list of items that must be written in transaction"
+  [reference]
+  (swap! *transaction-unwritten-docs* disj reference))
+
 (defn ref
   "Convert a firemore reference to a firebase reference"
   ([path] (ref FB path))
@@ -137,13 +142,10 @@
         (catch (partial on-failure c)))
        c))))
 
-(defn disj-reference [reference]
-  (swap! *transaction-unwritten-docs* disj reference))
-
 (defn set-db!
   ([reference value] (set-db! FB reference value))
   ([fb reference value]
-   (let [{:keys [id ref js-value]} (shared-db fb reference value)]
+   (let [{:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       ;; TODO: Gotta be something better than this pattern
       (if *transaction*
@@ -153,7 +155,7 @@
 (defn add-db!
   ([reference value] (add-db! FB reference value))
   ([fb reference value]
-   (let [{:keys [id ref js-value]} (shared-db fb reference value)]
+   (let [{:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
         #(do (.add *transaction* ref js-value) (disj-reference reference))
