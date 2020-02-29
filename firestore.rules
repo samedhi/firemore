@@ -21,9 +21,5 @@ service cloud.firestore {
         match /users/{userId}/{document=**} {
             allow read, write: if request.auth.uid == userId;
         }
-        
-        match /testing/{document=**} {
-            allow read, write;
-        }
     }
 }
