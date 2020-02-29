@@ -29,16 +29,16 @@
          (recur ps (not collection?) new-obj))))))
 
 (defn str->keywordize
+  "Converts string into a keyword"
   {:pre [(string? s)]}
   [s]
-  (if (= (subs s 0 1) ":")
-    (as-> s $
-      (subs $ 1)
-      (string/split $ "/")
-      (apply keyword $))
-    s))
+  (as-> s $
+    (subs $ 1)
+    (string/split $ "/")
+    (apply keyword $)))
 
 (defn keywordize->str
+  "Convert keyword into a string"
   {:pre [(keyword? k)]}
   [k]
   (str k))
