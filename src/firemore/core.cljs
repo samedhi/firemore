@@ -70,7 +70,7 @@
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
   [reference]
-  (let [{:keys [c unsubscribe]} (firestore/listen-db reference)
+  (let [{:keys [c unsubscribe]} (firestore/listen-to-document reference)
         opts {:on-close #(unsubscribe)}
         buffer (finalizing-buffer/create 1 opts)
         finalizing-chan (async/chan buffer)]

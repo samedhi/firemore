@@ -247,8 +247,8 @@
     c
     (doc-upgrader doc removed?))))
 
-(defn listen-db
-  ([reference] (listen-db FB reference))
+(defn listen-to-document
+  ([reference] (listen-to-document FB reference))
   ([fb reference]
    (let [{:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)

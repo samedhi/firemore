@@ -159,7 +159,7 @@
      (async/go
        (let [user-id (async/<! (authentication/uid))
              reference [:users user-id :test "listening-test"]
-             {:keys [c unsubscribe]} (sut/listen-db reference)
+             {:keys [c unsubscribe]} (sut/listen-to-document reference)
              m1                      {:string "listening-test-1"}
              m2                      {:string "listening-test-2"}]
          (t/testing "Initially there should be 'no document' at reference"
@@ -195,13 +195,13 @@
 
 ;; TODO - Can't figure out why this test isn't stable
 
-#_(t/deftest listen-db-test
+#_(t/deftest listen-to-document-test
   (t/async
    done
    (async/go
      ;; Clear out the TEST city in case it is still there
      (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-db [:cities])
+     (let [{:keys [c unsubscribe]} (sut/listen-to-document [:cities])
            cities (loop [acc []]
                     (let [new-acc (conj acc (async/<! c))]
                       (if (< (count new-acc) 5)

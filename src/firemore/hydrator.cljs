@@ -53,7 +53,7 @@
 (defn handle-added [m atm path reference]
   (let [listen (if (query? reference)
                  firestore/listen-collection-db
-                 firestore/listen-db)
+                 firestore/listen-to-document)
         {:keys [c unsubscribe] :as m2} (listen reference)
         output-path (prepend-output-path path)]
     (go-loop []
