@@ -132,7 +132,6 @@
       (async/put! c error)
       (async/close! c))))
   ([fx on-success on-failure]
-   ;; TODO: This is where you might mark the entities in a transaction you have written
    (if *transaction*
      (fx)
      (let [c (async/chan)]
@@ -147,9 +146,9 @@
   ([fb reference value]
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
-      ;; TODO: Gotta be something better than this pattern
       (if *transaction*
-        #(do (.set *transaction* ref js-value) (disj-reference reference))
+        #(do (.set *transaction* ref js-value)
+             (disj-reference reference))
         #(.set ref js-value))))))
 
 (defn add-db!
@@ -158,7 +157,8 @@
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
-        #(do (.add *transaction* ref js-value) (disj-reference reference))
+        #(do (.add *transaction* ref js-value)
+             (disj-reference reference))
         #(.add ref js-value))
       (fn [c docRef]
         (async/put! c {:id (.-id docRef)})
@@ -170,7 +170,8 @@
    (let [{:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
-        #(do (.update *transaction* ref js-value) (disj-reference reference))
+        #(do (.update *transaction* ref js-value)
+             (disj-reference reference))
         #(.update ref js-value))))))
 
 (defn delete-db!
@@ -179,7 +180,8 @@
    (let [{:keys [ref]} (shared-db fb reference nil)]
      (promise->chan
       (if *transaction*
-        #(do (.delete *transaction* ref) (disj-reference reference))
+        #(do (.delete *transaction* ref)
+             (disj-reference reference))
         #(.delete ref))))))
 
 (defn add-where-to-ref [ref query]
@@ -227,9 +229,7 @@
         #(.get (filter-by-query ref query))
         (fn [c snapshot]
           (let [a (atom [])]
-            (.forEach snapshot #(->> %
-                                     doc-upgrader
-                                     (swap! a conj)))
+            (.forEach snapshot #(swap! a conj (doc-upgrader %)))
             (async/put! c @a)
             (async/close! c))))
        (promise->chan
@@ -255,15 +255,13 @@
          doc-fx (partial doc-handler c)
          fx (if query
               (fn [snapshot]
-                (.forEach (.docChanges snapshot ;; TODO: #js {:includeMetadataChanges true}
-                                       )
+                (.forEach (.docChanges snapshot)
                           (fn [change]
                             (doc-fx (.-doc change)
                                     ;; TODO: More of the same nonsense
                                     (= "removed" (.-type change))))))
               doc-fx)
          unsubscribe (.onSnapshot (if query (filter-by-query ref query) ref)
-                                  ;; TODO: #js {:includeMetadataChanges true}
                                   fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
@@ -275,12 +273,9 @@
          c (async/chan)
          fx (fn [snapshot]
               (let [a (atom [])]
-                (.forEach snapshot #(->> %
-                                         doc-upgrader
-                                         (swap! a conj)))
+                (.forEach snapshot #(swap! a conj (doc-upgrader %)))
                 (async/put! c @a)))
          unsubscribe (.onSnapshot (filter-by-query ref query)
-                                  #js {:includeMetadataChanges true}
                                   fx)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
