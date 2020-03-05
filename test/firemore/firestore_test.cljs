@@ -1,5 +1,6 @@
 (ns firemore.firestore-test
   (:require
+   [clojure.set :as set]
    [cljs.core.async :as async]
    [cljs.test :as t :include-macros true]
    [firemore.authentication :as authentication]
@@ -13,39 +14,49 @@
          :state "CA"
          :country "USA"
          :capital false
-         :population (* 860 1000)}
+         :population (* 860 1000)
+         :regions ["east_coast" "norcal"]}
    "LA"  {:name "Los Angeles"
           :state "CA"
           :country "USA"
           :capital false
-          :population (* 3900 1000)}
+          :population (* 3900 1000)
+          :regions ["east_coast" "socal"]}
    "DC"  {:name "Washington, D.C."
           :state nil
           :country "USA"
           :capital false
-          :population (* 680 1000)}
+          :population (* 680 1000)
+          :regions ["west_coast"]}
    "TOK" {:name "Tokyo"
           :state nil
           :country "Japan"
           :capital false
-          :population (* 9 1000 1000 )}
+          :population (* 9 1000 1000)
+          :regions ["kantu" "honshu"]}
    "BJ"  {:name "Beijing"
           :state nil
           :country "China"
           :capital false
-          :population (* 215000 1000)}})
+          :population (* 215000 1000)
+          :regions ["jingjinji" "hebei"]}})
 
 ;; (defn write-fixture [fixture]
 ;;   (doseq [[k v] fixture]
 ;;     (sut/set-db! [:cities k] v)))
 
 ;; ;; The fixture data is never modified. This only needs to be written once...
-;; #_(write-fixture cities-fixture)
+;; (t/deftest write-fixture-data
+;;   (t/async
+;;    done
+;;    (async/go
+;;      (write-fixture cities-fixture)
+;;      (async/<! (async/timeout 5000))
+;;      (t/is true)
+;;      (done))))
 
 ;; ;; confirm fixtures are written
 ;; #_(async/go (println (async/<! (sut/get-db [:cities]))))
-
-
 
 (t/deftest keywordizing-test
   (t/are [k s] (= (sut/keywordize->str k) s)
@@ -282,6 +293,17 @@
      (let [actual (async/<! (sut/get-db [:cities {:where [":population" "<" (* 100 1000)]}]))
            expected (->> cities-fixture vals (filter #(-> % :population (< (* 100 1000)))))]
        (t/is (= (set (map :name expected)) (set (map :name actual))))
+       (done)))))
+
+(t/deftest array-contains-test
+  (t/async
+   done
+   (async/go
+     (let [expected (->> cities-fixture
+                         vals
+                         (filter #(-> % :regions (set/intersection #{"west_coast"}) empty? not)))
+           actual (async/<! (sut/get-db [:cities {:where [":regions" "array-contains" "west_coast"]}]))]
+       (t/is (= expected actual))
        (done)))))
 
 
