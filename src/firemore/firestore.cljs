@@ -186,7 +186,9 @@
 
 (defn add-where-to-ref [ref query]
   (reduce
-   (fn [ref [k op v]] (.where ref (str k) op v))
+   (fn [ref [k op v]]
+     (println (pr-str [k op v]))
+     (.where ref (str k) op (if (coll? v) (clj->js v) v)))
    ref
    (:where query)))
 
