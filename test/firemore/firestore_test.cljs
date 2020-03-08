@@ -15,19 +15,19 @@
          :country "USA"
          :capital false
          :population (* 860 1000)
-         :regions ["east_coast" "norcal"]}
+         :regions ["west_coast" "norcal"]}
    "LA"  {:name "Los Angeles"
           :state "CA"
           :country "USA"
           :capital false
           :population (* 3900 1000)
-          :regions ["east_coast" "socal"]}
+          :regions ["west_coast" "socal"]}
    "DC"  {:name "Washington, D.C."
           :state nil
           :country "USA"
           :capital false
           :population (* 680 1000)
-          :regions ["west_coast"]}
+          :regions ["east_coast"]}
    "TOK" {:name "Tokyo"
           :state nil
           :country "Japan"
