@@ -301,11 +301,32 @@
    (async/go
      (let [expected (->> cities-fixture
                          vals
-                         (filter #(-> % :regions (set/intersection #{"west_coast"}) empty? not)))
+                         (filter #(-> % :regions set (set/intersection #{"west_coast"}) empty? not)))
            actual (async/<! (sut/get-db [:cities {:where [":regions" "array-contains" "west_coast"]}]))]
        (t/is (= expected actual))
        (done)))))
 
+(t/deftest in-test
+  (t/async
+   done
+   (async/go
+     (let [expected (->> cities-fixture
+                         vals
+                         (filter #(->> % :country (contains? #{"USA" "Japan"}))))
+           actual (async/<! (sut/get-db [:cities {:where [":country" "in" ["USA" "Japan"]]}]))]
+       (t/is (= (set expected) (set actual)))
+       (done)))))
+
+(t/deftest array-contains-any-test
+  (t/async
+   done
+   (async/go
+     (let [expected (->> cities-fixture
+                         vals
+                         (filter #(-> % :regions set (set/intersection #{"west_coast" "east_coast"}) empty? not)))
+           actual (async/<! (sut/get-db [:cities {:where [":regions" "array-contains-any" ["west_coast" "east_coast"]]}]))]
+       (t/is (= (set expected) (set actual)))
+       (done)))))
 
 ;; Following requires a "compound index" to pass... If it isn't passing go into the
 ;; browser console and you will see a index that you need to click. Doing so will create the
