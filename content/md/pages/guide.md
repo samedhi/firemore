@@ -276,30 +276,35 @@ Firemore also supports [transactions](https://firebase.google.com/docs/firestore
         :state "CA"
         :country "USA"
         :capital false
-        :population 860000}
+        :population 860000
+        :regions ["west_coast" "norcal"]}
  "LA"  {:name "Los Angeles"
         :state "CA"
         :country "USA"
         :capital false
-        :population 3900000}
+        :population 3900000
+        :regions ["west_coast" "socal"]}
  "DC"  {:name "Washington, D.C."
         :state nil
         :country "USA"
         :capital false
-        :population 680000}
+        :population 680000
+        :regions ["east_coast"]}
  "TOK" {:name "Tokyo"
         :state nil
         :country "Japan"
         :capital false
-        :population 9000000000}
+        :population 9000000000
+        :regions ["kantu" "honshu"]}
  "BJ"  {:name "Beijing"
         :state nil
         :country "China"
         :capital false
-        :population 21500000}}
+        :population 21500000
+        :regions ["jingjinji" "hebei"]}}
 ```
 
-First [read the documentation on queries](https://firebase.google.com/docs/firestore/query-data/queries). As you just read, in Firestore queries are built from a collection reference. In Firemore queries are built by adding a query map to the end of the reference vector.
+First [read the documentation on queries](https://firebase.google.com/docs/firestore/query-data/queries). In Firestore queries are built from a collection reference. In Firemore queries are built by adding a query map to the end of the reference vector.
 
 So this in Firestore
 ```javascript
@@ -307,6 +312,11 @@ db.collection("cities").where("state", "==", "CA").where("population", "<", 1000
 ```
 
 Becomes this in Firemore
+
+```clojure
+[:cities {:where [[:state "==" "CA"] 
+                  [:population "<" 1000000]]}]
+```
 
 ```language-klipse
 (go
@@ -317,6 +327,23 @@ Becomes this in Firemore
 
 :done
 ```
+
+### Containment
+
+`array-contains` allows you to ask the question "Does this array contain this value?" The following example ask for all the cities that contain "west_coast" in their `:regions` array.
+
+```language-klipse
+(go
+  (let [->output (->output-fx)
+        cities (firemore/get [:cities {:where [":regions" "array-contains" "west_coast"]}])]
+    (->output "west coast cities" (async/<! cities))))
+
+:done
+```
+
+### "Or" Queries
+
+### Order & Limit
 
 Queries also support the [orderBy and limit option](https://firebase.google.com/docs/firestore/query-data/order-limit-data).
 
@@ -337,8 +364,9 @@ becomes this in firemore
 :done
 ```
 
-If you have only one `:where` clause predicate, it is fine to specify it as a
-single vector. So this is also equivalent to the above.
+### Shorthand
+
+If you have only one `:where` clause predicate it may be specified as a single vector. The following is equivalent to the above.
 
 ```clj
 [:cities {:where [:population "<" 1000000]
@@ -346,9 +374,7 @@ single vector. So this is also equivalent to the above.
           :limit 2}]
 ```
 
-In a similar fashion, the `:order` values are expanded into 2 element
-vectors of `[<property> "asc"]` if they are specified as strings or keywords. So the following
-is also equivalent to the above.
+The `:order` values are expanded into 2 element vectors of `[<property> "asc"]` if they are specified as strings or keywords. So the following is also equivalent to the above.
 
 ```clj
 [:cities {:where [:population "<" 1000000]
