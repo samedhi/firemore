@@ -303,7 +303,7 @@
                          vals
                          (filter #(-> % :regions set (set/intersection #{"west_coast"}) empty? not)))
            actual (async/<! (sut/get-db [:cities {:where [":regions" "array-contains" "west_coast"]}]))]
-       (t/is (= expected actual))
+       (t/is (= (set expected) (set actual)))
        (done)))))
 
 (t/deftest in-test
