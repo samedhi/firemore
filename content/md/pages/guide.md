@@ -330,7 +330,7 @@ Becomes this in Firemore
 
 ### Containment
 
-`array-contains` allows you to ask the question "Does this array contain this value?" The following example ask for all the cities that contain "west_coast" in their `:regions` array.
+`array-contains` allows you to ask the question "Does this array contain this value?" The following ask ask for all the cities that contain "west_coast" in their `:regions` array.
 
 ```language-klipse
 (go
@@ -341,7 +341,32 @@ Becomes this in Firemore
 :done
 ```
 
-### "Or" Queries
+### "Or" (union) Queries
+
+`in` (for non-array fields) and `array-contains-any` (for array fields) both take an array of values to match against a field. For every document in the collection, if any value in the array is found within the field, then the document is returned.
+
+
+The following query ask for all cities that have a `:country` field of either "Japan" or "USA".
+
+```language-klipse
+(go
+  (let [->output (->output-fx)
+        cities (firemore/get [:cities {:where [":country" "in" ["USA" "Japan"]]}])]
+    (->output "west coast cities" (async/<! cities))))
+
+:done
+```
+
+The following query ask for all of the `:cities` that contain either "west_coast" or "east_coast" in their regions.
+
+```language-klipse
+(go
+  (let [->output (->output-fx)
+        cities (firemore/get [:cities {:where [":regions" "array-contains-any" ["west_coast" "east_coast"]]}])]
+    (->output "west coast cities" (async/<! cities))))
+
+:done
+```
 
 ### Order & Limit
 
