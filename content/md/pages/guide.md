@@ -304,7 +304,7 @@ Firemore also supports [transactions](https://firebase.google.com/docs/firestore
         :regions ["jingjinji" "hebei"]}}
 ```
 
-First [read the documentation on queries](https://firebase.google.com/docs/firestore/query-data/queries). In Firestore queries are built from a collection reference. In Firemore queries are built by adding a query map to the end of the reference vector.
+First [read the documentation on queries](https://firebase.google.com/docs/firestore/query-data/queries). Firestore queries are built from a collection reference. Firemore queries are built by adding a query map to the end of the reference vector.
 
 So this in Firestore
 ```javascript
@@ -330,7 +330,7 @@ Becomes this in Firemore
 
 ### Containment
 
-`array-contains` allows you to ask the question "Does this array contain this value?" The following ask ask for all the cities that contain "west_coast" in their `:regions` array.
+`array-contains` allows you to ask the question "Does this array contain this value?" The following query ask for all the cities that contain `"west_coast"` in their `:regions` array.
 
 ```language-klipse
 (go
@@ -346,7 +346,7 @@ Becomes this in Firemore
 `in` (for non-array fields) and `array-contains-any` (for array fields) both take an array of values to match against a field. For every document in the collection, if any value in the array is found within the field, then the document is returned.
 
 
-The following query ask for all cities that have a `:country` field of either "Japan" or "USA".
+The following query ask for all cities that have a `:country` field of either `"Japan"` or `"USA"`.
 
 ```language-klipse
 (go
@@ -357,7 +357,7 @@ The following query ask for all cities that have a `:country` field of either "J
 :done
 ```
 
-The following query ask for all of the `:cities` that contain either "west_coast" or "east_coast" in their regions.
+The following query ask for all of the `:cities` that contain either `"west_coast"` or `"east_coast"` in their regions.
 
 ```language-klipse
 (go
@@ -461,7 +461,7 @@ Let's say you want a ordered list of the best of the [Three Stooges](https://en.
  </tbody>
 </table>
 
-With our current knowledge, we will need at least 4 observers to the Firestore database. One observer for each stooge (3), plus one observer for the list of stooges sorted by the number of votes they have received. We will in addition need to create a state machine that takes the result from each observer and places it within the `<stooge>-votes` element, as well as creating a closure to save the valu so that we can send the incremented value to the server upon button clicks. That is a good amount of work.
+With our current knowledge, we will need at least 4 observers to the Firestore database. One observer for each stooge (3), plus one observer for the list of stooges sorted by the number of votes they have received. We will in addition need to create a state machine that takes the result from each observer and places it within the `<stooge>-votes` element, as well as creating a closure to save the value so that we can send the incremented value to the server upon button clicks. That is a good amount of work.
 
 Or we can just do the following. 
 
