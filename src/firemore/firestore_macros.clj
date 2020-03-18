@@ -13,13 +13,12 @@
         ret-chan (gensym "return_")
         reads (gensym "reads_")]
     (loop [[[sym expr :as tuple] & remaining] (reverse (partition 2 bindings)) 
-           acc `((fn []
-                   (binding [firemore.firestore/*transaction* ~transaction
-                             firemore.firestore/*transaction-unwritten-docs* ~reads]
-                     (let [result# ~@body]
-                       (doseq [path# (deref ~reads)]
-                         (firemore.firestore/update-db! path# {}))
-                       result#))))]
+           acc `(binding [firemore.firestore/*transaction* ~transaction
+                          firemore.firestore/*transaction-unwritten-docs* ~reads]
+                  (let [result# ~@body]
+                    (doseq [path# (deref ~reads)]
+                        (firemore.firestore/update-db! path# {}))
+                    result#))]
       (if tuple
         (recur
          remaining
