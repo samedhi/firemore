@@ -321,10 +321,19 @@
   (t/async
    done
    (async/go
-     (let [expected (->> cities-fixture
-                         vals
-                         (filter #(-> % :regions set (set/intersection #{"west_coast" "east_coast"}) empty? not)))
-           actual (async/<! (sut/get-db [:cities {:where [":regions" "array-contains-any" ["west_coast" "east_coast"]]}]))]
+     (let [expected
+           (->> cities-fixture
+                vals
+                (filter #(-> %
+                             :regions
+                             set
+                             (set/intersection #{"west_coast" "east_coast"})
+                             empty?
+                             not)))
+           actual
+           (async/<! (sut/get-db [:cities {:where [":regions"
+                                                   "array-contains-any"
+                                                   ["west_coast" "east_coast"]]}]))]
        (t/is (= (set expected) (set actual)))
        (done)))))
 
