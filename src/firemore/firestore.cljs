@@ -142,9 +142,10 @@
        c))))
 
 (defn set-db!
-  ([reference value] (set-db! FB reference value))
-  ([fb reference value]
-   (let [{:keys [ref js-value]} (shared-db fb reference value)]
+  ([reference value] (set-db! reference value {:fb FB}))
+  ([reference value options]
+   (let [{:keys [fb]} options
+         {:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
         #(do (.set *transaction* ref js-value)
@@ -152,9 +153,10 @@
         #(.set ref js-value))))))
 
 (defn add-db!
-  ([reference value] (add-db! FB reference value))
-  ([fb reference value]
-   (let [{:keys [ref js-value]} (shared-db fb reference value)]
+  ([reference value] (add-db! reference value {:fb FB}))
+  ([reference value options]
+   (let [{:keys [fb]} options
+         {:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
         #(do (.add *transaction* ref js-value)
@@ -165,9 +167,10 @@
         (async/close! c))))))
 
 (defn update-db!
-  ([reference value] (update-db! FB reference value))
-  ([fb reference value]
-   (let [{:keys [ref js-value]} (shared-db fb reference value)]
+  ([reference value] (update-db! reference value {:fb FB}))
+  ([reference value options]
+   (let [{:keys [fb]} options
+         {:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
       (if *transaction*
         #(do (.update *transaction* ref js-value)
@@ -175,9 +178,10 @@
         #(.update ref js-value))))))
 
 (defn delete-db!
-  ([reference] (delete-db! FB reference))
-  ([fb reference]
-   (let [{:keys [ref]} (shared-db fb reference nil)]
+  ([reference] (delete-db! reference {:fb FB}))
+  ([reference options]
+   (let [{:keys [fb]} options
+         {:keys [ref]} (shared-db fb reference nil)]
      (promise->chan
       (if *transaction*
         #(do (.delete *transaction* ref)
@@ -222,9 +226,10 @@
 
 (defn get-db
   ([reference]
-   (get-db FB reference))
-  ([fb reference]
-   (let [{:keys [ref query]} (shared-db fb reference)]
+   (get-db reference {:fb FB}))
+  ([reference options]
+   (let [{:keys [fb]} options
+         {:keys [ref query]} (shared-db fb reference)]
      (if query
        (promise->chan
         #(.get (filter-by-query ref query))
@@ -249,9 +254,10 @@
     (doc-upgrader doc removed?))))
 
 (defn listen-to-document
-  ([reference] (listen-to-document FB reference))
-  ([fb reference]
-   (let [{:keys [ref query]} (shared-db fb reference nil)
+  ([reference] (listen-to-document reference {:fb FB}))
+  ([reference options]
+   (let [{:keys [fb]} options
+         {:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
          doc-fx (partial doc-handler c)
          fx (if query
@@ -268,9 +274,10 @@
      {:c c :unsubscribe unsubscribe-fx})))
 
 (defn listen-to-collection
-  ([reference] (listen-to-collection FB reference))
-  ([fb reference]
-   (let [{:keys [ref query]} (shared-db fb reference nil)
+  ([reference] (listen-to-collection reference {:fb FB}))
+  ([reference options]
+   (let [{:keys [fb]} options
+         {:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
          fx (fn [snapshot]
               (let [a (atom [])]

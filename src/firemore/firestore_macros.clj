@@ -17,7 +17,7 @@
                           firemore.firestore/*transaction-unwritten-docs* ~reads]
                   (let [result# ~@body]
                     (doseq [path# (deref ~reads)]
-                        (firemore.firestore/update-db! path# {}))
+                      (firemore.firestore/update-db! path# {}))
                     result#))]
       (if tuple
         (recur
