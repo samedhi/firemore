@@ -202,42 +202,28 @@
        (t/is (= (-> cities-fixture keys set) (->> ms (map meta) (map :id) set)))
        (done)))))
 
-;; (def test-city {:name "testacles" :population 1})
-
-;; TODO - Can't figure out why this test isn't stable
-
-#_(t/deftest listen-to-document-test
+(t/deftest listen-to-document-test
   (t/async
    done
    (async/go
-     ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-to-document [:cities])
-           cities (loop [acc []]
-                    (let [new-acc (conj acc (async/<! c))]
-                      (if (< (count new-acc) 5)
-                        (recur new-acc)
-                        new-acc)))]
-       ;; Exhaust out all the standard cities
-       (t/is (= 5 (count cities)))
-       (t/is (set (map :name cities) (set (map :name cities-fixture))))
-       ;; Add in one additional TEST city
-       (async/<! (sut/set-db! [:cities "TEST_CITY"] test-city))
-       ;; Confirm that we see additional TEST city
-       (t/is (= test-city (async/<! c)))
-       (t/is (= test-city (async/<! c)))
-       ;; Change population of TEST city
-       (async/<! (sut/update-db! [:cities "TEST_CITY"] {:population 2}))
-       ;; Confirm that we see change to TEST city
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! [:cities "TEST_CITY"]))))
-       ;; Confirm deletion of TEST
-       ;; TODO: Still surprising that it is always "synchronous"
-       (let [m (async/<! c)]
-         (t/is (false? (-> m meta :exist?)))
-         (t/is (false? (-> m meta :pending?))))
+     (let [sf (async/<! (sut/get-db [:cities "SF"]))
+           user-id (async/<! (authentication/uid))
+           my-sf-ref [:users user-id :cities "SF"]
+           {:keys [c unsubscribe]} (sut/listen-to-document my-sf-ref)]
+       (t/testing "Before there was San Francisco, there was nothing."
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
+       (t/testing "Copy San Francisco so that we can edit it."
+         (async/<! (sut/set-db! my-sf-ref sf))
+         (t/is (= sf (async/<! c))))
+       (t/testing "Modify San Francisco (Godzilla attacks)."
+         (async/<! (sut/update-db! my-sf-ref {:monsters ["Godzilla"]}))
+         (t/is (= ["Godzilla"] (-> c async/<! :monsters))))
+       (t/testing "Modify San Francisco (Mothra attacks)"
+         (async/<! (sut/update-db! my-sf-ref {:monsters ["Godzilla" "Mothra"]}))
+         (t/is (= ["Godzilla" "Mothra"] (-> c async/<! :monsters))))
+       (t/testing "Monsters destroyed the city"
+         (async/<! (sut/delete-db! my-sf-ref {:monsters ["Godzilla" "Mothra"]}))
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
        (unsubscribe)
        (done)))))
 
