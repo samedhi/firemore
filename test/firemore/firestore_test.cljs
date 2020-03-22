@@ -208,7 +208,7 @@
    (async/go
      (let [sf (async/<! (sut/get-db [:cities "SF"]))
            user-id (async/<! (authentication/uid))
-           my-sf-ref [:users user-id :cities "SF"]
+           my-sf-ref [:users user-id :listen-to-document-test "SF"]
            {:keys [c unsubscribe]} (sut/listen-to-document my-sf-ref)]
        (t/testing "Before there was San Francisco, there was nothing."
          (t/is (= config/NO_DOCUMENT (async/<! c))))
@@ -227,30 +227,26 @@
        (unsubscribe)
        (done)))))
 
-;; TODO - Can't figure out why this test isn't stable
-
-#_(t/deftest listen-to-collection-test
+(t/deftest listen-to-collection-test
   (t/async
    done
    (async/go
-     ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-to-collection [:cities])]
-       ;; Get all the standard cities
-       (t/is (= (->> cities-fixture vals (map :name) set)
-                (->> (async/<! c) (map :name) set)))
-       ;; Add in one additional TEST city
-       (async/<! (sut/set-db! [:cities "TEST_CITY"] test-city))
-       ;; Confirm that we see additional TEST city
-       ;; TODO - What is this doing? Why is it necessary?
-       (async/<! c)
-       (t/is (= test-city (->> (async/<! c) (filter #(-> % :name (= "testacles"))) first)))
-       ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! [:cities "TEST_CITY"]))))
-       ;; Confirm deletion of TEST
-       (async/<! (async/timeout 100))
-       (t/is (= (->> cities-fixture vals (map :name) set)
-                (->> (async/<! c) (map :name) set)))
+     (let [[a b :as cities] (async/<! (sut/get-db [:cities]))
+           user-id (async/<! (authentication/uid))
+           cities-ref [:users user-id :listen-to-collection-test]
+           {:keys [c unsubscribe]} (sut/listen-to-collection cities-ref)]
+       (t/testing "Initially our cities collection is empty."
+         (t/is (empty? (async/<! c))))
+       (t/testing "Add one city into our collection"
+         (async/<!
+          (sut/set-db! (->> a meta :id (conj cities-ref))
+                       a))
+         (t/is (= 1 (-> c async/<! count))))
+       (t/testing "Add a second city into our collection"
+         (async/<!
+          (sut/set-db! (->> b meta :id (conj cities-ref))
+                       b))
+         (t/is (= 2 (-> c async/<! count))))
        (unsubscribe)
        (done)))))
 
