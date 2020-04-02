@@ -166,31 +166,31 @@
 
 (t/deftest listening-test
   (t/async
-     done
-     (async/go
-       (let [user-id (async/<! (authentication/uid))
-             reference [:users user-id :test "listening-test"]
-             {:keys [c unsubscribe]} (sut/listen-to-document reference)
-             m1                      {:string "listening-test-1"}
-             m2                      {:string "listening-test-2"}]
-         (t/testing "Initially there should be 'no document' at reference"
-                    (sut/delete-db! reference)
-                    (t/is (= config/NO_DOCUMENT (async/<! c))))
+   done
+   (async/go
+     (let [user-id (async/<! (authentication/uid))
+           reference [:users user-id :test "listening-test"]
+           {:keys [c unsubscribe]} (sut/listen reference)
+           m1                      {:string "listening-test-1"}
+           m2                      {:string "listening-test-2"}]
+       (t/testing "Initially there should be 'no document' at reference"
+         (sut/delete-db! reference)
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
 
-         (t/testing "Document should be m1 after write"
-           (async/<! (sut/set-db! reference m1))
-           (t/is (= m1 (async/<! c))))
+       (t/testing "Document should be m1 after write"
+         (async/<! (sut/set-db! reference m1))
+         (t/is (= m1 (async/<! c))))
 
-         (t/testing "Document should be m2 after update"
-           (async/<! (sut/set-db! reference m2))
-           (t/is (= m2 (async/<! c))))
+       (t/testing "Document should be m2 after update"
+         (async/<! (sut/set-db! reference m2))
+         (t/is (= m2 (async/<! c))))
 
-         (t/testing "Back to 'no document' after delete"
-           (nil? (async/<! (sut/delete-db! reference)))
-           (t/is (= config/NO_DOCUMENT (async/<! c))))
+       (t/testing "Back to 'no document' after delete"
+         (nil? (async/<! (sut/delete-db! reference)))
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
 
-         (unsubscribe)
-         (done)))))
+       (unsubscribe)
+       (done)))))
 
 (t/deftest get-collection-test
   (t/async
@@ -202,69 +202,51 @@
        (t/is (= (-> cities-fixture keys set) (->> ms (map meta) (map :id) set)))
        (done)))))
 
-;; (def test-city {:name "testacles" :population 1})
-
-;; TODO - Can't figure out why this test isn't stable
-
-#_(t/deftest listen-to-document-test
+(t/deftest listen-to-document-test
   (t/async
    done
    (async/go
-     ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-to-document [:cities])
-           cities (loop [acc []]
-                    (let [new-acc (conj acc (async/<! c))]
-                      (if (< (count new-acc) 5)
-                        (recur new-acc)
-                        new-acc)))]
-       ;; Exhaust out all the standard cities
-       (t/is (= 5 (count cities)))
-       (t/is (set (map :name cities) (set (map :name cities-fixture))))
-       ;; Add in one additional TEST city
-       (async/<! (sut/set-db! [:cities "TEST_CITY"] test-city))
-       ;; Confirm that we see additional TEST city
-       (t/is (= test-city (async/<! c)))
-       (t/is (= test-city (async/<! c)))
-       ;; Change population of TEST city
-       (async/<! (sut/update-db! [:cities "TEST_CITY"] {:population 2}))
-       ;; Confirm that we see change to TEST city
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       (t/is (= (assoc test-city :population 2) (async/<! c)))
-       ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! [:cities "TEST_CITY"]))))
-       ;; Confirm deletion of TEST
-       ;; TODO: Still surprising that it is always "synchronous"
-       (let [m (async/<! c)]
-         (t/is (false? (-> m meta :exist?)))
-         (t/is (false? (-> m meta :pending?))))
+     (let [sf (async/<! (sut/get-db [:cities "SF"]))
+           user-id (async/<! (authentication/uid))
+           sf-ref [:users user-id :listen-to-document-test "SF"]
+           {:keys [c unsubscribe]} (sut/listen sf-ref)]
+       (t/testing "Before there was San Francisco, there was nothing."
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
+       (t/testing "Copy San Francisco so that we can edit it."
+         (async/<! (sut/set-db! sf-ref sf))
+         (t/is (= sf (async/<! c))))
+       (t/testing "Modify San Francisco (Godzilla attacks)."
+         (async/<! (sut/update-db! sf-ref {:monsters ["Godzilla"]}))
+         (t/is (= ["Godzilla"] (-> c async/<! :monsters))))
+       (t/testing "Modify San Francisco (Mothra attacks)"
+         (async/<! (sut/update-db! sf-ref {:monsters ["Godzilla" "Mothra"]}))
+         (t/is (= ["Godzilla" "Mothra"] (-> c async/<! :monsters))))
+       (t/testing "Monsters destroyed the city"
+         (async/<! (sut/delete-db! sf-ref {:monsters ["Godzilla" "Mothra"]}))
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
        (unsubscribe)
        (done)))))
 
-;; TODO - Can't figure out why this test isn't stable
-
-#_(t/deftest listen-to-collection-test
+(t/deftest listen-to-collection-test
   (t/async
    done
    (async/go
-     ;; Clear out the TEST city in case it is still there
-     (async/<! (sut/delete-db! [:cities "TEST_CITY"]))
-     (let [{:keys [c unsubscribe]} (sut/listen-to-collection [:cities])]
-       ;; Get all the standard cities
-       (t/is (= (->> cities-fixture vals (map :name) set)
-                (->> (async/<! c) (map :name) set)))
-       ;; Add in one additional TEST city
-       (async/<! (sut/set-db! [:cities "TEST_CITY"] test-city))
-       ;; Confirm that we see additional TEST city
-       ;; TODO - What is this doing? Why is it necessary?
-       (async/<! c)
-       (t/is (= test-city (->> (async/<! c) (filter #(-> % :name (= "testacles"))) first)))
-       ;; Delete TEST city
-       (t/is (nil? (async/<! (sut/delete-db! [:cities "TEST_CITY"]))))
-       ;; Confirm deletion of TEST
-       (async/<! (async/timeout 100))
-       (t/is (= (->> cities-fixture vals (map :name) set)
-                (->> (async/<! c) (map :name) set)))
+     (let [[a b :as cities] (async/<! (sut/get-db [:cities]))
+           user-id (async/<! (authentication/uid))
+           cities-ref [:users user-id :listen-to-collection-test]
+           {:keys [c unsubscribe]} (sut/listen cities-ref)]
+       (t/testing "Initially our cities collection is empty."
+         (t/is (empty? (async/<! c))))
+       (t/testing "Add one city into our collection"
+         (async/<!
+          (sut/set-db! (->> a meta :id (conj cities-ref))
+                       a))
+         (t/is (= 1 (-> c async/<! count))))
+       (t/testing "Add a second city into our collection"
+         (async/<!
+          (sut/set-db! (->> b meta :id (conj cities-ref))
+                       b))
+         (t/is (= 2 (-> c async/<! count))))
        (unsubscribe)
        (done)))))
 
@@ -321,10 +303,19 @@
   (t/async
    done
    (async/go
-     (let [expected (->> cities-fixture
-                         vals
-                         (filter #(-> % :regions set (set/intersection #{"west_coast" "east_coast"}) empty? not)))
-           actual (async/<! (sut/get-db [:cities {:where [":regions" "array-contains-any" ["west_coast" "east_coast"]]}]))]
+     (let [expected
+           (->> cities-fixture
+                vals
+                (filter #(-> %
+                             :regions
+                             set
+                             (set/intersection #{"west_coast" "east_coast"})
+                             empty?
+                             not)))
+           actual
+           (async/<! (sut/get-db [:cities {:where [":regions"
+                                                   "array-contains-any"
+                                                   ["west_coast" "east_coast"]]}]))]
        (t/is (= (set expected) (set actual)))
        (done)))))
 

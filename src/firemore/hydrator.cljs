@@ -51,10 +51,7 @@
 ;; having state machine be a side effect in a watch function attached to the
 ;; atom. Not good. Bad code. What better?
 (defn handle-added [m atm path reference]
-  (let [listen (if (query? reference)
-                 firestore/listen-to-collection
-                 firestore/listen-to-document)
-        {:keys [c unsubscribe] :as m2} (listen reference)
+  (let [{:keys [c unsubscribe] :as m2} (firestore/listen reference)
         output-path (prepend-output-path path)]
     (go-loop []
       (when-let [v (async/<! c)]
