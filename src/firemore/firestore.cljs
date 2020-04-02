@@ -250,47 +250,28 @@
           (->> doc doc-upgrader (async/put! c))
           (async/close! c)))))))
 
-;; TODO: This removed? argument is nonsense, but for some reason `exists` in the document
-;; does not agree with "removed" from the change...
-(defn doc-handler
-  ([c doc] (doc-handler c doc nil))
-  ([c doc removed?]
-   (async/put!
-    c
-    (doc-upgrader doc removed?))))
+(defn snapshot-handler [collection? c snapshot]
+  (async/put!
+   c
+   (if collection?
+     (let [a (atom [])]
+       (.forEach snapshot #(swap! a conj (doc-upgrader %)))
+       @a)
+     (doc-upgrader snapshot (= "removed" (.-type snapshot))))))
 
-(defn listen-to-document
-  ([reference] (listen-to-document reference nil))
+(defn listen
+  ([reference] (listen reference nil))
   ([reference options]
    (let [{:keys [fb]} (merge-default-options options)
          {:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
-         doc-fx (partial doc-handler c)
-         fx (if query
-              (fn [snapshot]
-                (.forEach (.docChanges snapshot)
-                          (fn [change]
-                            (doc-fx (.-doc change)
-                                    ;; TODO: More of the same nonsense
-                                    (= "removed" (.-type change))))))
-              doc-fx)
-         unsubscribe (.onSnapshot (if query (filter-by-query ref query) ref)
-                                  fx)
-         unsubscribe-fx #(do (async/close! c) (unsubscribe))]
-     {:c c :unsubscribe unsubscribe-fx})))
-
-(defn listen-to-collection
-  ([reference] (listen-to-collection reference nil))
-  ([reference options]
-   (let [{:keys [fb]} (merge-default-options options)
-         {:keys [ref query]} (shared-db fb reference nil)
-         c (async/chan)
-         fx (fn [snapshot]
-              (let [a (atom [])]
-                (.forEach snapshot #(swap! a conj (doc-upgrader %)))
-                (async/put! c @a)))
-         unsubscribe (.onSnapshot (filter-by-query ref query)
-                                  fx)
+         collection? (some? query)
+         handler (partial snapshot-handler collection? c)
+         unsubscribe (.onSnapshot
+                      (if collection?
+                        (filter-by-query ref query)
+                        ref)
+                      handler)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
 
