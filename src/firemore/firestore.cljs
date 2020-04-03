@@ -257,6 +257,13 @@
        @a)
      (doc-upgrader snapshot))))
 
+(defn snapshot-listen-options->js [options]
+  (let [{:keys [include-metadata-changes]} options]
+    (clj->js
+     (merge {}
+            (when include-metadata-changes
+              {:includeMetadataChanges true})))))
+
 (defn listen
   ([reference] (listen reference nil))
   ([reference options]
@@ -265,11 +272,11 @@
          c (async/chan)
          collection? (some? query)
          handler (partial snapshot-handler collection? c)
-         unsubscribe (.onSnapshot
-                      (if collection?
-                        (filter-by-query ref query)
-                        ref)
-                      handler)
+         unsubscribe (.onSnapshot (if collection?
+                                    (filter-by-query ref query)
+                                    ref)
+                                  (snapshot-listen-options->js options)
+                                  handler)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
 
