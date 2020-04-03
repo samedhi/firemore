@@ -233,7 +233,8 @@
    (async/go
      (let [[a b :as cities] (async/<! (sut/get-db [:cities]))
            user-id (async/<! (authentication/uid))
-           cities-ref [:users user-id :listen-to-collection-test]
+           uuid (keyword (str (random-uuid)))
+           cities-ref [:users user-id uuid]
            {:keys [c unsubscribe]} (sut/listen cities-ref)]
        (t/testing "Initially our cities collection is empty."
          (t/is (empty? (async/<! c))))
