@@ -218,17 +218,15 @@
       (add-order-to-ref query)
       (add-limit-to-ref query)))
 
-(defn doc-upgrader
-  ([doc] (doc-upgrader doc nil))
-  ([doc removed?]
-   (if-let [exists? (.-exists doc)]
-     (with-meta
-       (clojurify (.data doc))
-       {:id (.-id doc)
-        :removed? removed?
-        :exists? exists?
-        :pending? (.. doc -metadata -hasPendingWrites)})
-     config/NO_DOCUMENT)))
+(defn doc-upgrader [doc]
+  (if-let [exists? (.-exists doc)]
+    (with-meta
+      (clojurify (.data doc))
+      {:id (.-id doc)
+       :removed? removed?
+       :exists? exists?
+       :pending? (.. doc -metadata -hasPendingWrites)})
+    config/NO_DOCUMENT))
 
 (defn get-db
   ([reference]
@@ -241,7 +239,7 @@
         #(.get (filter-by-query ref query))
         (fn [c snapshot]
           (let [a (atom [])]
-            (.forEach snapshot #(swap! a conj (doc-upgrader %)))
+            (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
             (async/put! c @a)
             (async/close! c))))
        (promise->chan
@@ -255,9 +253,9 @@
    c
    (if collection?
      (let [a (atom [])]
-       (.forEach snapshot #(swap! a conj (doc-upgrader %)))
+       (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
        @a)
-     (doc-upgrader snapshot (= "removed" (.-type snapshot))))))
+     (doc-upgrader snapshot))))
 
 (defn listen
   ([reference] (listen reference nil))
