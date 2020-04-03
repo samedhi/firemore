@@ -223,8 +223,6 @@
     (with-meta
       (clojurify (.data doc))
       {:id (.-id doc)
-       :removed? removed?
-       :exists? exists?
        :pending? (.. doc -metadata -hasPendingWrites)})
     config/NO_DOCUMENT))
 
