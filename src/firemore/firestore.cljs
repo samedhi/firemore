@@ -218,17 +218,13 @@
       (add-order-to-ref query)
       (add-limit-to-ref query)))
 
-(defn doc-upgrader
-  ([doc] (doc-upgrader doc nil))
-  ([doc removed?]
-   (if-let [exists? (.-exists doc)]
-     (with-meta
-       (clojurify (.data doc))
-       {:id (.-id doc)
-        :removed? removed?
-        :exists? exists?
-        :pending? (.. doc -metadata -hasPendingWrites)})
-     config/NO_DOCUMENT)))
+(defn doc-upgrader [doc]
+  (if-let [exists? (.-exists doc)]
+    (with-meta
+      (clojurify (.data doc))
+      {:id (.-id doc)
+       :pending? (.. doc -metadata -hasPendingWrites)})
+    config/NO_DOCUMENT))
 
 (defn get-db
   ([reference]
@@ -241,7 +237,7 @@
         #(.get (filter-by-query ref query))
         (fn [c snapshot]
           (let [a (atom [])]
-            (.forEach snapshot #(swap! a conj (doc-upgrader %)))
+            (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
             (async/put! c @a)
             (async/close! c))))
        (promise->chan
@@ -255,9 +251,16 @@
    c
    (if collection?
      (let [a (atom [])]
-       (.forEach snapshot #(swap! a conj (doc-upgrader %)))
+       (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
        @a)
-     (doc-upgrader snapshot (= "removed" (.-type snapshot))))))
+     (doc-upgrader snapshot))))
+
+(defn snapshot-listen-options->js [options]
+  (let [{:keys [include-metadata-changes]} options]
+    (clj->js
+     (merge {}
+            (when include-metadata-changes
+              {:includeMetadataChanges true})))))
 
 (defn listen
   ([reference] (listen reference nil))
@@ -267,11 +270,11 @@
          c (async/chan)
          collection? (some? query)
          handler (partial snapshot-handler collection? c)
-         unsubscribe (.onSnapshot
-                      (if collection?
-                        (filter-by-query ref query)
-                        ref)
-                      handler)
+         unsubscribe (.onSnapshot (if collection?
+                                    (filter-by-query ref query)
+                                    ref)
+                                  (snapshot-listen-options->js options)
+                                  handler)
          unsubscribe-fx #(do (async/close! c) (unsubscribe))]
      {:c c :unsubscribe unsubscribe-fx})))
 

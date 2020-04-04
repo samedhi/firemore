@@ -233,7 +233,8 @@
    (async/go
      (let [[a b :as cities] (async/<! (sut/get-db [:cities]))
            user-id (async/<! (authentication/uid))
-           cities-ref [:users user-id :listen-to-collection-test]
+           uuid (keyword (str (random-uuid)))
+           cities-ref [:users user-id uuid]
            {:keys [c unsubscribe]} (sut/listen cities-ref)]
        (t/testing "Initially our cities collection is empty."
          (t/is (empty? (async/<! c))))
@@ -247,6 +248,29 @@
           (sut/set-db! (->> b meta :id (conj cities-ref))
                        b))
          (t/is (= 2 (-> c async/<! count))))
+       (unsubscribe)
+       (done)))))
+
+(t/deftest listen-to-metadata-changes
+  (t/async
+   done
+   (async/go
+     (let [sf (async/<! (sut/get-db [:cities "SF"]))
+           user-id (async/<! (authentication/uid))
+           sf-ref [:users user-id :listen-to-metadata-changes "SF"]
+           {:keys [c unsubscribe]} (sut/listen sf-ref {:include-metadata-changes true})]
+       (t/testing "Before there was San Francisco, there was nothing."
+         (t/is (= config/NO_DOCUMENT (async/<! c))))
+       (t/testing "Write San Francisco to the path we are watching"
+         (async/<! (sut/set-db! sf-ref sf)))
+       (t/testing "The first listener event is the local event"
+         (let [sf-unpersisted (async/<! c)]
+           (t/is (= sf sf-unpersisted))
+           (t/is (true? (-> sf-unpersisted meta :pending?)))))
+       (t/testing "The second listener event is the server event"
+         (let [sf-persisted (async/<! c)]
+           (t/is (= sf sf-persisted))
+           (t/is (false? (-> sf-persisted meta :pending?)))))
        (unsubscribe)
        (done)))))
 
