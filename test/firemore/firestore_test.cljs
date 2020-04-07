@@ -257,7 +257,8 @@
    (async/go
      (let [sf (async/<! (sut/get-db [:cities "SF"]))
            user-id (async/<! (authentication/uid))
-           sf-ref [:users user-id :listen-to-metadata-changes "SF"]
+           uuid (str (random-uuid))
+           sf-ref [:users user-id :listen-to-metadata-changes uuid]
            {:keys [c unsubscribe]} (sut/listen sf-ref {:include-metadata-changes true})]
        (t/testing "Before there was San Francisco, there was nothing."
          (t/is (= config/NO_DOCUMENT (async/<! c))))
