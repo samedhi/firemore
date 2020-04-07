@@ -122,7 +122,10 @@
   ([fx]
    (promise->chan
     fx
-    (fn [c] (async/close! c))))
+    (fn [c value]
+      (when (some? value)
+        (async/put! c value))
+      (async/close! c))))
   ([fx on-success]
    (promise->chan
     fx
