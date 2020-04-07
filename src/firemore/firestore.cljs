@@ -118,22 +118,23 @@
     (shared-db fb reference)
     {:js-value (-> value replace-timestamp jsonify)})))
 
+(defn closer [c]
+  (async/close! c))
+
 (defn promise->chan
   ([fx]
    (promise->chan
     fx
     (fn [c value]
       (when (some? value)
-        (async/put! c value))
-      (async/close! c))))
+        (async/put! c value)))))
   ([fx on-success]
    (promise->chan
     fx
     on-success
     (fn [c error]
       (js/console.log error)
-      (async/put! c error)
-      (async/close! c))))
+      (async/put! c error))))
   ([fx on-success on-failure]
    (if *transaction*
      (fx)
@@ -141,7 +142,8 @@
        (..
         (fx)
         (then (partial on-success c))
-        (catch (partial on-failure c)))
+        (catch (partial on-failure c))
+        (then (partial closer c)))
        c))))
 
 (def default-options
@@ -241,13 +243,11 @@
         (fn [c snapshot]
           (let [a (atom [])]
             (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
-            (async/put! c @a)
-            (async/close! c))))
+            (async/put! c @a))))
        (promise->chan
         #(.get ref)
         (fn [c doc]
-          (->> doc doc-upgrader (async/put! c))
-          (async/close! c)))))))
+          (->> doc doc-upgrader (async/put! c))))))))
 
 (defn snapshot-handler [collection? c snapshot]
   (async/put!
