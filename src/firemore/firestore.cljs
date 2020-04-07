@@ -146,6 +146,11 @@
         (then (partial closer c)))
        c))))
 
+(defn promise->mchan [fx]
+  (promise->chan
+   (fn [c value] (async/put! c {:success true  :value value}))
+   (fn [c error] (async/put! c {:success false :error error}))))
+
 (def default-options
   {:fb FB})
 
