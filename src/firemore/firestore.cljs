@@ -122,24 +122,35 @@
   ([fx]
    (promise->chan
     fx
-    (fn [c] (async/close! c))))
+    identity))
   ([fx on-success]
    (promise->chan
     fx
     on-success
-    (fn [c error]
-      (js/console.log error)
-      (async/put! c error)
-      (async/close! c))))
+    (fn [error]
+      (ex-info
+       :promise->chan-failure
+       {:error error}))))
   ([fx on-success on-failure]
    (if *transaction*
      (fx)
      (let [c (async/chan)]
        (..
         (fx)
-        (then (partial on-success c))
-        (catch (partial on-failure c)))
+        (then  (fn [value]
+                 (some->> value on-success (async/put! c))))
+        (catch (fn [error]
+                 (when-let [e (on-failure error)]
+                   (js/console.error (pr-str e))
+                   (async/put! c e))))
+        (then  (fn [_]
+                 (async/close! c))))
        c))))
+
+(defn promise->mchan [fx]
+  (promise->chan
+   (fn [value] {:success true  :value value})
+   (fn [error] {:success false :error error})))
 
 (def default-options
   {:fb FB})
@@ -168,9 +179,8 @@
         #(do (.add *transaction* ref js-value)
              (disj-reference reference))
         #(.add ref js-value))
-      (fn [c docRef]
-        (async/put! c {:id (.-id docRef)})
-        (async/close! c))))))
+      (fn [docRef]
+        {:id (.-id docRef)})))))
 
 (defn update-db!
   ([reference value] (update-db! reference value nil))
@@ -235,16 +245,14 @@
      (if query
        (promise->chan
         #(.get (filter-by-query ref query))
-        (fn [c snapshot]
+        (fn [snapshot]
           (let [a (atom [])]
             (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
-            (async/put! c @a)
-            (async/close! c))))
+            @a)))
        (promise->chan
         #(.get ref)
-        (fn [c doc]
-          (->> doc doc-upgrader (async/put! c))
-          (async/close! c)))))))
+        (fn [doc]
+          (->> doc doc-upgrader)))))))
 
 (defn snapshot-handler [collection? c snapshot]
   (async/put!
