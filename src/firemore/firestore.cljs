@@ -135,11 +135,25 @@
                  (async/close! c))))
      c)))
 
-(defn promise->mchan [promise]
-  (promise->chan
-   promise
-   (fn [value] {:success true  :value value})
-   (fn [error] {:success false :error error})))
+(defn chan->promise
+  ([c]
+   (chan->promise
+    c
+    (fn [m] (-> m :success false?))))
+  ([c reject?]
+   (chan->promise
+    c
+    reject?
+    (fn [c v] (async/close! c))))
+  ([c reject? finally-fx]
+   (js/Promise.
+    (fn [resolve reject]
+      (go
+        (let [v (async/<! c)]
+          (if (reject? v)
+            (reject v)
+            (resolve v)))
+        (finally-fx c v))))))
 
 (def default-options
   {:fb FB})
@@ -275,11 +289,6 @@
   (unsubscribe))
 
 (def silly 2)
-
-(defn chan->promise [c]
-  (js/Promise.
-   (fn [resolve reject]
-     (go (resolve (async/<! c))))))
 
 (defn wrap-chan [update-fx]
   (fn [trx]
