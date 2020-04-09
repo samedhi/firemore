@@ -109,34 +109,35 @@
     {:js-value (-> value replace-timestamp jsonify)})))
 
 (defn promise->chan
-  ([fx]
+  ([promise]
    (promise->chan
-    fx
+    promise
     identity))
-  ([fx on-success]
+  ([promise on-success]
    (promise->chan
-    fx
+    promise
     on-success
     (fn [error]
       (ex-info
        :promise->chan-failure
        {:error error}))))
-  ([fx on-success on-failure]
+  ([promise on-success on-failure]
    (let [c (async/chan)]
      (..
-      (fx)
+      promise
       (then  (fn [value]
                (some->> value on-success (async/put! c))))
       (catch (fn [error]
                (when-let [e (on-failure error)]
                  (js/console.error (pr-str e))
                  (async/put! c e))))
-      (then  (fn [_]
-               (async/close! c))))
+      (finally (fn [_]
+                 (async/close! c))))
      c)))
 
-(defn promise->mchan [fx]
+(defn promise->mchan [promise]
   (promise->chan
+   promise
    (fn [value] {:success true  :value value})
    (fn [error] {:success false :error error})))
 
@@ -154,7 +155,7 @@
      (if transaction
        (.set transaction ref js-value)
        (promise->chan
-        #(.set ref js-value))))))
+        (.set ref js-value))))))
 
 (defn add-db!
   ([reference value] (add-db! reference value nil))
@@ -162,7 +163,7 @@
    (let [{:keys [fb]} (merge-default-options options)
          {:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
-      #(.add ref js-value)
+      (.add ref js-value)
       (fn [docRef]
         {:id (.-id docRef)})))))
 
@@ -174,7 +175,7 @@
      (if transaction
        (.update transaction ref js-value)
        (promise->chan
-        #(.update ref js-value))))))
+        (.update ref js-value))))))
 
 (defn delete-db!
   ([reference] (delete-db! reference nil))
@@ -182,9 +183,9 @@
    (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref]} (shared-db fb reference nil)]
      (if transaction
-       #(.delete transaction ref)
+       (.delete transaction ref)
        (promise->chan
-        #(.delete ref))))))
+        (.delete ref))))))
 
 (defn add-where-to-ref [ref query]
   (reduce
@@ -226,15 +227,15 @@
          {:keys [ref query]} (shared-db fb reference)]
      (if query
        (promise->chan
-        #(.get (filter-by-query ref query))
+        (.get (filter-by-query ref query))
         (fn [snapshot]
           (let [a (atom [])]
             (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
             @a)))
        (promise->chan
         (if transaction
-          #(.get transaction ref)
-          #(.get ref))
+          (.get transaction ref)
+          (.get ref))
         (fn [doc]
           (->> doc doc-upgrader)))))))
 
