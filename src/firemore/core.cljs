@@ -52,8 +52,8 @@
   channel -> `clojure.core.async/chan`
   put    -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference]
-  (firestore/get-db reference))
+  [reference & [options]]
+  (firestore/get-db reference options))
 
 (defn watch
   "Watch the document at `reference` in the Firestore database.
@@ -69,8 +69,8 @@
   channel -> `clojure.core.async/chan`
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference]
-  (let [{:keys [c unsubscribe]} (firestore/listen reference)
+  [reference & [options]]
+  (let [{:keys [c unsubscribe]} (firestore/listen reference options)
         opts {:on-close #(unsubscribe)}
         buffer (finalizing-buffer/create 1 opts)
         finalizing-chan (async/chan buffer)]
@@ -83,8 +83,8 @@
   Returns a channel. Creates a new id for `document`. Either
   {:id <document-id>} or {:error <error-msg>} will then be placed upon the
   channel. The channel will then be closed."
-  [reference document]
-  (firestore/add-db! reference document))
+  [reference document & [options]]
+  (firestore/add-db! reference document options))
 
 (defn write!
   "Writes the `document` to `reference` within the Firestore database.
@@ -97,8 +97,8 @@
   channel -> `clojure.core.async/chan`
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference document]
-  (firestore/set-db! reference document))
+  [reference document & [options]]
+  (firestore/set-db! reference document options))
 
 (defn merge!
   "Merges `document` into the document at `reference` within the Firestore database.
@@ -111,8 +111,8 @@
   channel -> `clojure.core.async/chan`
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference document]
-  (firestore/update-db! reference document))
+  [reference document & [options]]
+  (firestore/update-db! reference document options))
 
 (defn delete!
   "Deletes the document at `reference` within the Firestore database.
@@ -124,8 +124,11 @@
   channel -> `clojure.core.async/chan`
   put     -> `clojure.core.async/put!`
   closed  -> `clojure.core.async/close!`"
-  [reference]
-  (firestore/delete-db! reference))
+  [reference & [options]]
+  (firestore/delete-db! reference options))
+
+(defn transact! [update-fx]
+  (firestore/transact-db! update-fx))
 
 ;; authentication
 
