@@ -1,25 +1,41 @@
 (ns firemore.firestore
   (:require
    [cljs.core.async :as async]
+   [clojure.set :as set]
    [clojure.string :as string]
    [firemore.config :as config]
    [firemore.firebase :as firebase])
   (:require-macros
-   [cljs.core.async.macros :refer [go-loop go]]
-   [firemore.firestore-macros :refer [transact-db!]]))
+   [cljs.core.async.macros :refer [go-loop go]]))
 
 (def FB firebase/FB)
 
-(def ^:dynamic *transaction* nil)
-
-(def ^:dynamic *transaction-unwritten-docs* nil)
-
 (def server-timestamp (.serverTimestamp js/firebase.firestore.FieldValue))
 
-(defn disj-reference
-  "Remove 'reference from list of items that must be written in transaction"
-  [reference]
-  (swap! *transaction-unwritten-docs* disj reference))
+(def active-transactions (atom []))
+
+(defn index-of-transaction [transactions trx]
+  (->> transactions
+       (map-indexed vector)
+       (filter #(-> % second :trx (identical? trx)))
+       ffirst))
+
+(defn add-reference-to-transaction [transactions trx reference]
+  (let [i (or (index-of-transaction transactions trx)
+              (count transactions))
+        m2 (get transactions i {:trx trx :references #{}})
+        m3 (update m2 :references conj reference)]
+    (assoc transactions i m3)))
+
+(defn remove-reference-from-transaction [transactions trx reference]
+  (if-let [i (index-of-transaction transactions trx)]
+    (update-in transactions [i :references] disj reference)
+    transactions))
+
+(defn remove-transaction-from-transactions [transactions trx]
+  (if-let [i (index-of-transaction transactions trx)]
+    (vec (lazy-cat (subvec transactions 0 i) (subvec transactions (inc i))))
+    transactions))
 
 (defn ref
   "Convert a firemore reference to a firebase reference"
@@ -119,38 +135,51 @@
     {:js-value (-> value replace-timestamp jsonify)})))
 
 (defn promise->chan
-  ([fx]
+  ([promise]
    (promise->chan
-    fx
+    promise
     identity))
-  ([fx on-success]
+  ([promise on-success]
    (promise->chan
-    fx
+    promise
     on-success
     (fn [error]
       (ex-info
        :promise->chan-failure
        {:error error}))))
-  ([fx on-success on-failure]
-   (if *transaction*
-     (fx)
-     (let [c (async/chan)]
-       (..
-        (fx)
-        (then  (fn [value]
-                 (some->> value on-success (async/put! c))))
-        (catch (fn [error]
-                 (when-let [e (on-failure error)]
-                   (js/console.error (pr-str e))
-                   (async/put! c e))))
-        (then  (fn [_]
+  ([promise on-success on-failure]
+   (let [c (async/chan)]
+     (..
+      promise
+      (then  (fn [value]
+               (some->> value on-success (async/put! c))))
+      (catch (fn [error]
+               (when-let [e (on-failure error)]
+                 (js/console.error (pr-str e))
+                 (async/put! c e))))
+      (finally (fn [_]
                  (async/close! c))))
-       c))))
+     c)))
 
-(defn promise->mchan [fx]
-  (promise->chan
-   (fn [value] {:success true  :value value})
-   (fn [error] {:success false :error error})))
+(defn chan->promise
+  ([c]
+   (chan->promise
+    c
+    (fn [m] (-> m :success false?))))
+  ([c reject?]
+   (chan->promise
+    c
+    reject?
+    (fn [c v] (async/close! c))))
+  ([c reject? finally-fx]
+   (js/Promise.
+    (fn [resolve reject]
+      (go
+        (let [v (async/<! c)]
+          (if (reject? v)
+            (reject v)
+            (resolve v)))
+        (finally-fx c v))))))
 
 (def default-options
   {:fb FB})
@@ -161,13 +190,13 @@
 (defn set-db!
   ([reference value] (set-db! reference value nil))
   ([reference value options]
-   (let [{:keys [fb] :or {fb FB}} (merge-default-options options)
+   (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref js-value]} (shared-db fb reference value)]
-     (promise->chan
-      (if *transaction*
-        #(do (.set *transaction* ref js-value)
-             (disj-reference reference))
-        #(.set ref js-value))))))
+     (if transaction
+       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
+           (.set transaction ref js-value))
+       (promise->chan
+        (.set ref js-value))))))
 
 (defn add-db!
   ([reference value] (add-db! reference value nil))
@@ -175,34 +204,31 @@
    (let [{:keys [fb]} (merge-default-options options)
          {:keys [ref js-value]} (shared-db fb reference value)]
      (promise->chan
-      (if *transaction*
-        #(do (.add *transaction* ref js-value)
-             (disj-reference reference))
-        #(.add ref js-value))
+      (.add ref js-value)
       (fn [docRef]
         {:id (.-id docRef)})))))
 
 (defn update-db!
   ([reference value] (update-db! reference value nil))
   ([reference value options]
-   (let [{:keys [fb]} (merge-default-options options)
+   (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref js-value]} (shared-db fb reference value)]
-     (promise->chan
-      (if *transaction*
-        #(do (.update *transaction* ref js-value)
-             (disj-reference reference))
-        #(.update ref js-value))))))
+     (if transaction
+       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
+           (.update transaction ref js-value))
+       (promise->chan
+        (.update ref js-value))))))
 
 (defn delete-db!
   ([reference] (delete-db! reference nil))
   ([reference options]
-   (let [{:keys [fb]} (merge-default-options options)
+   (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref]} (shared-db fb reference nil)]
-     (promise->chan
-      (if *transaction*
-        #(do (.delete *transaction* ref)
-             (disj-reference reference))
-        #(.delete ref))))))
+     (if transaction
+       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
+           (.delete transaction ref))
+       (promise->chan
+        (.delete ref))))))
 
 (defn add-where-to-ref [ref query]
   (reduce
@@ -240,17 +266,21 @@
   ([reference]
    (get-db reference nil))
   ([reference options]
-   (let [{:keys [fb]} (merge-default-options options)
+   (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref query]} (shared-db fb reference)]
      (if query
        (promise->chan
-        #(.get (filter-by-query ref query))
+        (.get (filter-by-query ref query))
         (fn [snapshot]
           (let [a (atom [])]
             (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
             @a)))
        (promise->chan
-        #(.get ref)
+        (if transaction
+          (do
+            (swap! active-transactions add-reference-to-transaction transaction reference)
+            (.get transaction ref))
+          (.get ref))
         (fn [doc]
           (->> doc doc-upgrader)))))))
 
@@ -288,3 +318,28 @@
 
 (defn unlisten-db [{:keys [unsubscribe]}]
   (unsubscribe))
+
+(defn noop-unwritten-reads! [transactions trx]
+  (doseq [unwritten-reference (->> (index-of-transaction transactions trx)
+                                   (get transactions)
+                                   :references)]
+    (update-db! unwritten-reference {} {:transaction trx})))
+
+(defn transact-db!
+  ([update-fx] (transact-db! update-fx nil))
+  ([update-fx options]
+   (let [{:keys [fb]} (merge-default-options options)
+         c (async/chan)
+         new-update-fx (fn [trx]
+                         (-> (update-fx trx)
+                             chan->promise
+                             (.then    #(do (noop-unwritten-reads! @active-transactions trx)
+                                            %))
+                             (.finally #(swap! active-transactions remove-transaction-from-transactions trx))))]
+     (-> fb
+         firebase/db
+         (.runTransaction new-update-fx)
+         (.then    #(async/put! c %))
+         (.catch   #(js/console.error %))
+         (.finally #(async/close! c)))
+     c)))
