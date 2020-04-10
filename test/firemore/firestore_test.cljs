@@ -160,6 +160,33 @@
        (t/is (= 16200 (:midichlorian (async/<! (sut/get-db reference)))))
        (done)))))
 
+(t/deftest batch-test
+  (t/async
+   done
+   (async/go
+     (let [user-id    (async/<! (authentication/uid))
+           reference  [:users user-id :batch-test]
+           [r1 r2 r3] (->> (repeatedly 3 random-uuid)
+                           (map str)
+                           (map #(conj reference %)))
+           btx1       (sut/create-batch)
+           btx2       (sut/create-batch)]
+       (sut/set-db! r1 {:value 1} {:batch btx1})
+       (sut/set-db! r2 {:value 2} {:batch btx1})
+       (sut/set-db! r3 {:value 3} {:batch btx1})
+       (async/<! (sut/commit-batch! btx1))
+       (t/is (= 1 (-> (sut/get-db r1) async/<! :value)))
+       (t/is (= 2 (-> (sut/get-db r2) async/<! :value)))
+       (t/is (= 3 (-> (sut/get-db r3) async/<! :value)))
+       (sut/set-db!    r1 {:value 4} {:batch btx2})
+       (sut/update-db! r2 {:value 5} {:batch btx2})
+       (sut/delete-db! r3            {:batch btx2})
+       (async/<! (sut/commit-batch! btx2))
+       (t/is (= 4 (-> (sut/get-db r1) async/<! :value)))
+       (t/is (= 5 (-> (sut/get-db r2) async/<! :value)))
+       (t/is (= :firemore/no-document (async/<! (sut/get-db r3))))
+       (done)))))
+
 (t/deftest listening-test
   (t/async
    done

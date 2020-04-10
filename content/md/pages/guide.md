@@ -12,6 +12,7 @@
     1. [References](#references)
     1. [Reading & Writing](#reading_and_writing)
     1. [Transactions](#transactions)
+    1. [Batching](#batching)
     1. [Queries](#queries)
     1. [Using Local State Atom](#using_local_state_atom)
     1. [Authentication](#authentication)
@@ -267,6 +268,42 @@ Firemore also supports [transactions](https://firebase.google.com/docs/firestore
      
 :done
 ```
+
+## Batching
+
+[Batching](https://firebase.google.com/docs/firestore/manage-data/transactions#batched-writes) writes is supported. Batches allow for atomic (all or nothing) writes, updates, and deletions of Firestore documents.
+
+```language-klipse
+
+(go
+     (let [->output (->output-fx)
+           user-id    (async/<! (firemore/uid))
+           reference  [:users user-id :batch-test]
+           [r1 r2 r3] (->> (repeatedly 3 random-uuid)
+                           (map str)
+                           (map #(conj reference %)))
+           btx1       (firemore/create-batch)
+           btx2       (firemore/create-batch)]
+       (firemore/write! r1 {:value 1} {:batch btx1})
+       (firemore/write! r2 {:value 2} {:batch btx1})
+       (firemore/write! r3 {:value 3} {:batch btx1})
+       (async/<! (firemore/commit-batch! btx1))
+       (->output :first-batch-writes
+         [(async/<! (firemore/get r1))
+          (async/<! (firemore/get r2))    
+          (async/<! (firemore/get r3))])
+       (firemore/write!  r1 {:value 4} {:batch btx2})
+       (firemore/merge!  r2 {:value 5} {:batch btx2})
+       (firemore/delete! r3            {:batch btx2})
+       (async/<! (firemore/commit-batch! btx2))
+       (->output :second-batch-writes
+         [(async/<! (firemore/get r1))
+          (async/<! (firemore/get r2))    
+          (async/<! (firemore/get r3))])))
+
+:done
+```
+
 
 ## Queries
 

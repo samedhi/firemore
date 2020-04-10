@@ -130,6 +130,10 @@
 (defn transact! [update-fx]
   (firestore/transact-db! update-fx))
 
+(def create-batch firestore/create-batch)
+
+(def commit-batch! firestore/commit-batch!)
+
 ;; authentication
 
 (defn user-chan

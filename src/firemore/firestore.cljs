@@ -190,11 +190,13 @@
 (defn set-db!
   ([reference value] (set-db! reference value nil))
   ([reference value options]
-   (let [{:keys [fb transaction]} (merge-default-options options)
-         {:keys [ref js-value]} (shared-db fb reference value)]
-     (if transaction
-       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
-           (.set transaction ref js-value))
+   (let [{:keys [fb transaction batch]} (merge-default-options options)
+         {:keys [ref js-value]} (shared-db fb reference value)
+         override (or transaction batch)]
+     (if override
+       (do (when transaction
+             (swap! active-transactions remove-reference-from-transaction transaction reference))
+           (.set override ref js-value))
        (promise->chan
         (.set ref js-value))))))
 
@@ -211,22 +213,26 @@
 (defn update-db!
   ([reference value] (update-db! reference value nil))
   ([reference value options]
-   (let [{:keys [fb transaction]} (merge-default-options options)
-         {:keys [ref js-value]} (shared-db fb reference value)]
-     (if transaction
-       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
-           (.update transaction ref js-value))
+   (let [{:keys [fb transaction batch]} (merge-default-options options)
+         {:keys [ref js-value]} (shared-db fb reference value)
+         override (or transaction batch)]
+     (if override
+       (do (when transaction
+             (swap! active-transactions remove-reference-from-transaction transaction reference))
+           (.update override ref js-value))
        (promise->chan
         (.update ref js-value))))))
 
 (defn delete-db!
   ([reference] (delete-db! reference nil))
   ([reference options]
-   (let [{:keys [fb transaction]} (merge-default-options options)
-         {:keys [ref]} (shared-db fb reference nil)]
-     (if transaction
-       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
-           (.delete transaction ref))
+   (let [{:keys [fb transaction batch]} (merge-default-options options)
+         {:keys [ref]} (shared-db fb reference nil)
+         override (or transaction batch)]
+     (if override
+       (do (when transaction
+             (swap! active-transactions remove-reference-from-transaction transaction reference))
+           (.delete override ref))
        (promise->chan
         (.delete ref))))))
 
@@ -343,3 +349,12 @@
          (.catch   #(js/console.error %))
          (.finally #(async/close! c)))
      c)))
+
+(defn create-batch
+  ([] (create-batch FB))
+  ([fb]
+   (-> fb firebase/db (.batch))))
+
+(defn commit-batch! [btx]
+  (promise->chan
+   (.commit btx)))
