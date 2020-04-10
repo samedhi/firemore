@@ -5,9 +5,7 @@
    [cljs.test :as t :include-macros true]
    [firemore.authentication :as authentication]
    [firemore.config :as config]
-   [firemore.firestore :as sut])
-  (:require-macros
-   [firemore.firestore-macros :refer [transact-db!]]))
+   [firemore.firestore :as sut]))
 
 (def cities-fixture
   {"SF" {:name "San Francisco"
