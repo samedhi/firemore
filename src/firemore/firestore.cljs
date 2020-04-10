@@ -178,8 +178,8 @@
         (let [v (async/<! c)]
           (if (reject? v)
             (reject v)
-            (resolve v)))
-        (finally-fx c v))))))
+            (resolve v))
+          (finally-fx c v)))))))
 
 (def default-options
   {:fb FB})
