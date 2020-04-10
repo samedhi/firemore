@@ -148,8 +148,6 @@
           {padme-midichlorians  :midichlorian} (async/<! (sut/get-db [:characters "padme"] {:transaction trx})) ;; 4700
           midichlorians-average (/ (+ padme-midichlorians anakin-midichlorians) 2)] ;; 16200
       (sut/set-db! reference {:midichlorian midichlorians-average} {:transaction trx})
-      (sut/update-db! [:characters "padme"] {} {:transaction trx})
-      (sut/update-db! [:characters "anakin"] {} {:transaction trx})
       (str "midichlorians count is " midichlorians-average))))
 
 (t/deftest transaction-test

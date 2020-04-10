@@ -1,6 +1,7 @@
 (ns firemore.firestore
   (:require
    [cljs.core.async :as async]
+   [clojure.set :as set]
    [clojure.string :as string]
    [firemore.config :as config]
    [firemore.firebase :as firebase])
@@ -10,6 +11,31 @@
 (def FB firebase/FB)
 
 (def server-timestamp (.serverTimestamp js/firebase.firestore.FieldValue))
+
+(def active-transactions (atom []))
+
+(defn index-of-transaction [transactions trx]
+  (->> transactions
+       (map-indexed vector)
+       (filter #(-> % second :trx (identical? trx)))
+       ffirst))
+
+(defn add-reference-to-transaction [transactions trx reference]
+  (let [i (or (index-of-transaction transactions trx)
+              (count transactions))
+        m2 (get transactions i {:trx trx :references #{}})
+        m3 (update m2 :references conj reference)]
+    (assoc transactions i m3)))
+
+(defn remove-reference-from-transaction [transactions trx reference]
+  (if-let [i (index-of-transaction transactions trx)]
+    (update-in transactions [i :references] disj reference)
+    transactions))
+
+(defn remove-transaction-from-transactions [transactions trx]
+  (if-let [i (index-of-transaction transactions trx)]
+    (vec (lazy-cat (subvec transactions 0 i) (subvec transactions (inc i))))
+    transactions))
 
 (defn ref
   "Convert a firemore reference to a firebase reference"
@@ -167,7 +193,8 @@
    (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref js-value]} (shared-db fb reference value)]
      (if transaction
-       (.set transaction ref js-value)
+       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
+           (.set transaction ref js-value))
        (promise->chan
         (.set ref js-value))))))
 
@@ -187,7 +214,8 @@
    (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref js-value]} (shared-db fb reference value)]
      (if transaction
-       (.update transaction ref js-value)
+       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
+           (.update transaction ref js-value))
        (promise->chan
         (.update ref js-value))))))
 
@@ -197,7 +225,8 @@
    (let [{:keys [fb transaction]} (merge-default-options options)
          {:keys [ref]} (shared-db fb reference nil)]
      (if transaction
-       (.delete transaction ref)
+       (do (swap! active-transactions remove-reference-from-transaction transaction reference)
+           (.delete transaction ref))
        (promise->chan
         (.delete ref))))))
 
@@ -248,7 +277,9 @@
             @a)))
        (promise->chan
         (if transaction
-          (.get transaction ref)
+          (do
+            (swap! active-transactions add-reference-to-transaction transaction reference)
+            (.get transaction ref))
           (.get ref))
         (fn [doc]
           (->> doc doc-upgrader)))))))
@@ -288,21 +319,26 @@
 (defn unlisten-db [{:keys [unsubscribe]}]
   (unsubscribe))
 
-(def silly 2)
-
-(defn wrap-chan [update-fx]
-  (fn [trx]
-    (let [p (-> trx update-fx chan->promise)]
-      (fn [] (js/console.log "NOt sure")))))
+(defn noop-unwritten-reads! [transactions trx]
+  (doseq [unwritten-reference (->> (index-of-transaction transactions trx)
+                                   (get transactions)
+                                   :references)]
+    (update-db! unwritten-reference {} {:transaction trx})))
 
 (defn transact-db!
   ([update-fx] (transact-db! update-fx nil))
   ([update-fx options]
    (let [{:keys [fb]} (merge-default-options options)
-         c (async/chan)]
+         c (async/chan)
+         new-update-fx (fn [trx]
+                         (-> (update-fx trx)
+                             chan->promise
+                             (.then    #(do (noop-unwritten-reads! @active-transactions trx)
+                                            %))
+                             (.finally #(swap! active-transactions remove-transaction-from-transactions trx))))]
      (-> fb
          firebase/db
-         (.runTransaction #(-> % update-fx chan->promise))
+         (.runTransaction new-update-fx)
          (.then    #(async/put! c %))
          (.catch   #(js/console.error %))
          (.finally #(async/close! c)))
