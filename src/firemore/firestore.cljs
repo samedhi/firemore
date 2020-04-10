@@ -355,6 +355,6 @@
   ([fb]
    (-> fb firebase/db (.batch))))
 
-(defn commit-batch [btx]
+(defn commit-batch! [btx]
   (promise->chan
    (.commit btx)))
