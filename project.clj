@@ -38,9 +38,10 @@
                {:id "test"
                 :source-paths ["src" "test"]
                 :compiler {:main firemore.test-runner
-                           :optimizations :whitespace
+                           :optimizations :none
                            :output-dir "resources/public/js/out-test"
                            :output-to "resources/public/js/test.js"
+                           :asset-path "js/out-test"
                            :pretty-print true}}
                {:id "prod"
                 :source-paths ["src"]
