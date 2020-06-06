@@ -53,3 +53,39 @@
 (def TIMESTAMP :firemore/timestamp)
 
 (def NO_DOCUMENT :firemore/no-document)
+
+;; Authentication
+
+(def auth-ui-config-keys
+  [:signInSuccessUrl
+   :signInOptions
+   :tosUrl
+   :privacyPolicyUrl])
+
+(def auth-ui
+  {;; Do you want to enable the UI authentication?
+   :enabled? false
+
+   ;; URL that you will redirect to upon signin success
+   :signInSuccessUrl "/"
+
+   ;; The options you want enabled as part of this firebase app.
+   ;; Why isn't this queried from firebase itself? Why do I have to manually enable it?
+   :signInOptions [
+                   "anonymous"    ;; Continue as guest
+                   "facebook.com" ;; Sign in with Facebook
+                   "github.com"   ;; Sign in with GitHub
+                   "google.com"   ;; Sign in with Google
+                   "twitter.com"  ;; Sign in with Twitter
+                   "password"     ;; Sign in with email
+                   "phone"        ;; Sign in with phone
+                   ]
+
+   ;; Your Terms of Service
+   :tosUrl "<your-tos-url>"
+
+   ;; Why is this one a function and not data? Who knows!
+   :privacyPolicyUrl #(js/window.location.assign "<your-privacy-policy-url>")
+
+   ;; id of the DOM element you that firebase-UI should be rendered within
+   :container-selector "#firebaseui-auth-container"})
