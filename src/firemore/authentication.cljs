@@ -61,3 +61,16 @@
                      clj->js)]
       (.start auth-ui container-selector config)
       (reset! loaded-auth-ui-already? true))))
+
+(defn set-style-on-auth-ui [value]
+  (-> config/auth-ui
+      :container-selector
+      (js/document.querySelector)
+      (.. -style)
+      (set! value)))
+
+(defn show-auth-ui []
+  (set-style-on-auth-ui "display: block"))
+
+(defn hide-auth-ui []
+  (set-style-on-auth-ui "display: none"))

@@ -23,3 +23,4 @@ pom.xml.asc
 /blog
 /.DS_Store
 /.firebase*
+/.rebel_readline_history
