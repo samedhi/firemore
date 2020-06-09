@@ -47,7 +47,7 @@
     c))
 
 (defonce init-auth-ui
-  (when (:enabled? config/AUTH_CONFIG)
+  (when (:enabled config/AUTH_CONFIG)
     (let [auth (firebase/auth firebase/FB)
           auth-ui (js/firebaseui.auth.AuthUI. auth)
           {:keys [container-selector]} config/AUTH_CONFIG

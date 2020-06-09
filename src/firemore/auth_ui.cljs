@@ -2,7 +2,7 @@
 
 (def default-config
   {;; Do you want to enable the UI authentication?
-   :enabled? false
+   :enabled false
 
    ;; URL that you will redirect to upon signin success
    :signInSuccessUrl "/"
