@@ -1,6 +1,7 @@
 (ns firemore.config
   (:require
    [clojure.string :as string]
+   [firemore.auth-ui :as auth-ui]
    [goog.object :as goog.object]))
 
 (def TIMESTAMP :firemore/timestamp)
@@ -13,7 +14,8 @@
 
 (def default-firebase-config
   {"FIREBASE_API_KEY"    "AIzaSyAEEGdlXMkrxbF-OWbsDffCSKMogeiRvfA"
-   "FIREBASE_PROJECT_ID" "inferno-8d188"})
+   "FIREBASE_PROJECT_ID" "inferno-8d188"
+   "FIREBASE_AUTH_UI_CONFIG" nil})
 
 (def provided-firebase-config
   (reduce-kv
@@ -45,6 +47,13 @@
 (def FIREBASE_API_KEY (grab-value "FIREBASE_API_KEY"))
 
 (def FIREBASE_PROJECT_ID (grab-value "FIREBASE_PROJECT_ID"))
+
+(def AUTH_CONFIG
+  (let [js-obj (get provided-firebase-config "FIREBASE_AUTH_UI_CONFIG")
+        auth-ui-config (js->clj js-obj :keywordize-keys true)]
+    (merge
+     auth-ui/default-config
+     auth-ui-config)))
 
 ;; The following values are derived from FIREBASE_API_KEY and FIREBASE_PROJECT_ID for firebase.
 

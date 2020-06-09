@@ -2,6 +2,7 @@
   (:require
    [cljs.core.async :as async]
    [firemore.firebase :as firebase]
+   [firemore.auth-ui :as auth-ui]
    [firemore.config :as config])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
@@ -45,25 +46,19 @@
           (recur))))
     c))
 
-;; This is here so that you can still do live-reloading in this namespace
-;; without constantly getting an error about "An AuthUI instance already exist ...";
-;; of course this means you have to reload manually if you make changes here.
-(defonce loaded-auth-ui-already? (atom false))
-
-(def init-auth-ui
-  (when (and (:enabled? config/auth-ui)
-             (false? @loaded-auth-ui-already?))
+(defonce init-auth-ui
+  (when (:enabled? config/AUTH_CONFIG)
     (let [auth (firebase/auth firebase/FB)
           auth-ui (js/firebaseui.auth.AuthUI. auth)
-          {:keys [container-selector]} config/auth-ui
-          config (-> config/auth-ui
-                     (select-keys config/auth-ui-config-keys)
+          {:keys [container-selector]} config/AUTH_CONFIG
+          config (-> config/AUTH_CONFIG
+                     (select-keys auth-ui/config-keys)
                      clj->js)]
       (.start auth-ui container-selector config)
-      (reset! loaded-auth-ui-already? true))))
+      true)))
 
 (defn set-style-on-auth-ui [value]
-  (-> config/auth-ui
+  (-> config/AUTH_CONFIG
       :container-selector
       (js/document.querySelector)
       (.. -style)
