@@ -71,6 +71,8 @@
 
    ;; The options you want enabled as part of this firebase app.
    ;; Why isn't this queried from firebase itself? Why do I have to manually enable it?
+   ;; List comes from:
+   ;; https://github.com/firebase/firebase-js-sdk/blob/a98a76648f0683e86d6b1f0ee89b3d5548c30677/packages/auth/src/idp.js#L37-L47
    :signInOptions [
                    "anonymous"    ;; Continue as guest
                    "facebook.com" ;; Sign in with Facebook
