@@ -27,7 +27,7 @@
    ;; Why is this one a function and not data? Who knows!
    :privacyPolicyUrl #(js/window.location.assign "<your-privacy-policy-url>")
 
-   ;; id of the DOM element you that firebase-UI should be rendered within
+   ;; querySelector of the DOM element that firebaseUI-auth should be rendered within
    :container-selector "#firebaseui-auth-container"})
 
 (def config-keys

@@ -567,44 +567,9 @@ Remove the `path` from the `atm`
 
 ## Authentication
 
-Most apps require some way of authenticating a user.
-Firestore includes a fairly robust [Authentication System](https://firebase.google.com/docs/auth).
-Use of the built in authentication system will allow you to complete your project
-more quickly and securely than rolling your own solutions.
+Firestore supports a few primitive and one "ready made" solution for authentication. The primitives include the `(logout!)`, `(login-anonymously!)`, and `(user-atom)` functions. The "ready made" solution is the use of [firebaseUI-Auth](https://github.com/firebase/firebaseui-web) as a drop in authentication solution.
 
-<form>
- <fieldset>
-  <legend> Current User </legend>
-  <span id="current-user"></span>
-  <p>
-   <button id="anonymous-button">New Anonymous Login</button> 
-  </p>
-  <p>
-   <button id="logout-button">Logout</button>   
-  </p>
- </fieldset>
-</form>
-
-
-```language-klipse
-(defn user-watcher [_ _ _ n]
-  (let [current-user-element (js/document.getElementById "current-user")]
-    (set! (.-textContent current-user-element) (pr-str n))))
-    
-(add-watch (firemore/user-atom) :update-user-values user-watcher)
-
-(set! (.-onclick (js/document.getElementById "anonymous-button"))
-      (fn [event] 
-        (.preventDefault event)
-        (firemore/login-anonymously!)))
-        
-(set! (.-onclick (js/document.getElementById "logout-button"))
-      (fn [event] 
-        (.preventDefault event)
-        (firemore/logout!)))
-```
-
-"New Anonymous Login" will sign you in as a new anonymous user (assuming you aren't already logged in). "Logout" will sign you out. Anonymous does NOT mean unidentified (you have a unique user id in `:uid`). Anonymous does mean that we don't know your `:email`, `:name`, or `:photo`. Anonymous means that if you logout from this account or loose access to this system, there would be no way to log back in as this anonymous user (though you could always login as a new anonymous user).
+### Primitives
 
 ```no-highlight
 Usage:
@@ -620,14 +585,80 @@ Usage:
 Log in a new anonymous user; noop if already logged in.
 ```
 
+Anonymous does NOT mean unidentified (you have a unique user id in `:uid`). Anonymous does mean that we don't know your `:email`, `:name`, or `:photo`. Anonymous means that if you logout from this account or loose access to this system, there would be no way to log back in as this anonymous user (though you could always login as a new anonymous user).
+
+### FirebaseUI-Auth
+
+[FirebaseUI-Auth](https://github.com/firebase/firebaseui-web) FirebaseUI-Auth provides a drop-in authentication solution that handles the UI flows for signing in users with email/passwords, phone numbers, and Identity Provider's including Google, Facebook, GitHub, Twitter, Apple, Microsoft, Yahoo, OpenID Connect (OIDC) providers and SAML providers.
+
+For illustrating details please consult [the docs](https://github.com/firebase/firebaseui-web); but minimal setup is to add the following two lines to your `index.html` within the `<head>` tag.
+
+```
+<script src="https://www.gstatic.com/firebasejs/ui/4.5.1/firebase-ui-auth.js"></script>
+<link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.5.1/firebase-ui-auth.css" />
+```
+
+Then enable and instantiate FirebaseUI-Auth by adding the following to the `body` tag in your `index.html`.
+
+```
+<script>
+   FIREBASE_AUTH_UI_CONFIG = {enabled: true}
+</script>
+<div id="firebaseui-auth-container"></div>
+```
+
+Note that this must be added BEFORE your clojurescript (using firemore) application is loaded; so your body might look something like the following.
+
+```
+<body>
+  <script>
+    FIREBASE_AUTH_UI_CONFIG = {enabled: true}
+  </script>
+  <div id="firebaseui-auth-container"></div>
+  <script src="js/app.js"></script>
+</body>
+```
+
+Note that there are more options that can be configured for FirebaseUI-Auth; here is the map containing all the config options.
+
+```
+{  ;; Do you want to enable the FirebaseUI-Auth?
+   :enabled false
+
+   ;; URL that you will redirect to upon signin success
+   :signInSuccessUrl "/"
+
+   ;; The options you want enabled as part of this firebase app
+   :signInOptions [
+                   "anonymous"    ;; Continue as guest
+                   "facebook.com" ;; Sign in with Facebook
+                   "github.com"   ;; Sign in with GitHub
+                   "google.com"   ;; Sign in with Google
+                   "twitter.com"  ;; Sign in with Twitter
+                   "password"     ;; Sign in with email
+                   "phone"        ;; Sign in with phone
+                   ]
+
+   ;; Your Terms of Service
+   :tosUrl "<your-tos-url>"
+
+   ;; Redirect to your privacy policy
+   :privacyPolicyUrl #(js/window.location.assign "<your-privacy-policy-url>")
+
+   ;; querySelector of the DOM element that firebaseUI-auth should be rendered within
+   :container-selector "#firebaseui-auth-container"}
+```
+
+### Get Current User
+
+Regardless of how you log in, you still need to know about the currently logged in user. `(user-atom)` will return an atom that will be updated to reflect the currently logged in user. More information about the keys and values within this atom can be [found here](https://firebase.google.com/docs/auth).
+
 ```no-highlight
 Usage
 (user-atom)
 
 Return the atom that reflects the state of currently logged in user
 ```
-
-# API
 
 # Contributing
 
