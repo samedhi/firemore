@@ -52,7 +52,7 @@ Pull Request are always welcome and appreciated. If you want to discuss firemore
 [@github](https://github.com/samedhi)
 [@linkedin](https://www.linkedin.com/in/stephen-cagle-92b895102/)
 
-![Man (Stephen Cagle) holding beer & small dog (Chihuahua)](asset/img/stephen_and_nugget.jpg)
+![Man (Stephen Cagle) holding beer & small dog (Chihuahua)](content/img/stephen_and_nugget_1200.jpg)
 
 # License
 
