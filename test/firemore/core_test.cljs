@@ -11,4 +11,5 @@
     {:float 1.0}
     {:boolean true}
     {:nil nil}
-    {:instant (js/Date)}))
+    {:instant (js/Date)}
+    {"string" "stays-a-string"}))
