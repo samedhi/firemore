@@ -201,10 +201,10 @@
         (.set ref js-value))))))
 
 (defn add-db!
-  ([reference value] (add-db! reference value nil))
-  ([reference value options]
+  ([reference collection value] (add-db! reference collection value nil))
+  ([reference collection value options]
    (let [{:keys [fb]} (merge-default-options options)
-         {:keys [ref js-value]} (shared-db fb reference value)]
+         {:keys [ref js-value]} (shared-db fb (conj (vec reference) collection) value)]
      (promise->chan
       (.add ref js-value)
       (fn [docRef]

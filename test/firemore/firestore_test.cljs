@@ -106,11 +106,11 @@
    done
    (async/go
      (let [user-id (async/<! (authentication/uid))
-           reference [:users user-id :get-and-add-test]
+           reference [:users user-id]
            m {:string "get-and-add-test-value"}
-           {:keys [id]} (async/<! (sut/add-db! reference m))]
+           {:keys [id]} (async/<! (sut/add-db! reference :get-and-add-test m))]
        (t/is (some? id))
-       (t/is (= m (async/<! (sut/get-db (conj reference id)))))
+       (t/is (= m (async/<! (sut/get-db (conj reference :get-and-add-test id)))))
        (done)))))
 
 (t/deftest delete-test
