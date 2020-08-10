@@ -220,7 +220,7 @@
    done
    (async/go
      (let [user-id (async/<! (authentication/uid))
-           ms (async/<! (sut/get-db [:cities]))]
+           ms (async/<! (sut/get-db [:cities {}]))]
        (t/is (= 5 (count ms)))
        (t/is (= (-> cities-fixture keys set) (->> ms (map meta) (map :id) set)))
        (done)))))
@@ -254,11 +254,11 @@
   (t/async
    done
    (async/go
-     (let [[a b :as cities] (async/<! (sut/get-db [:cities]))
+     (let [[a b :as cities] (async/<! (sut/get-db [:cities {}]))
            user-id (async/<! (authentication/uid))
            uuid (keyword (str (random-uuid)))
            cities-ref [:users user-id uuid]
-           {:keys [c unsubscribe]} (sut/listen cities-ref)]
+           {:keys [c unsubscribe]} (sut/listen (conj cities-ref {}))]
        (t/testing "Initially our cities collection is empty."
          (t/is (empty? (async/<! c))))
        (t/testing "Add one city into our collection"

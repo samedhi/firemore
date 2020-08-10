@@ -49,7 +49,7 @@
      (let [a         (atom {})
            c         (change-watcher a)
            user-id   (async/<! (authentication/uid))
-           reference [:users user-id :test-hydrator-empty-collection]]
+           reference [:users user-id :test-hydrator-empty-collection {}]]
        (sut/add! a [:hydrator] reference)
        (t/testing "First [] is synchronously done by sut/add!"
          (let [m (async/<! c)]
@@ -130,14 +130,14 @@
      done
      (async/go
        (t/testing "Start watching cities"
-         (sut/add! a [:cities] [:cities])
+         (sut/add! a [:cities] [:cities {}])
          (let [m (async/<! c)]
-           (t/is (= {:cities [:cities]}
+           (t/is (= {:cities [:cities {}]}
                     (:firemore m)))
            (t/is (= {:cities []}
                     (:firestore m))))
          (let [m (async/<! c)]
-           (t/is (= {:cities [:cities]}
+           (t/is (= {:cities [:cities {}]}
                     (:firemore m)))
            (t/is (= (count firestore-test/cities-fixture)
                     (-> m :firestore :cities count)))))
