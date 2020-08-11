@@ -260,12 +260,14 @@
       (add-order-to-ref query)
       (add-limit-to-ref query)))
 
-(defn doc-upgrader [doc]
+(defn doc-upgrader [reference doc]
   (if-let [exists? (.-exists doc)]
     (with-meta
       (clojurify (.data doc))
-      {:id (.-id doc)
-       :pending? (.. doc -metadata -hasPendingWrites)})
+      (let [id (.-id doc)]
+        {:id id
+         :reference (conj (pop reference) id)
+         :pending? (.. doc -metadata -hasPendingWrites)}))
     config/NO_DOCUMENT))
 
 (defn get-db
@@ -278,8 +280,8 @@
        (promise->chan
         (.get (filter-by-query ref query))
         (fn [snapshot]
-          (let [a (atom [])]
-            (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
+          (let [a (atom (with-meta [] {:reference reference}))]
+            (.forEach snapshot #(->> % (doc-upgrader reference) (swap! a conj)))
             @a)))
        (promise->chan
         (if transaction
@@ -288,16 +290,16 @@
             (.get transaction ref))
           (.get ref))
         (fn [doc]
-          (->> doc doc-upgrader)))))))
+          (doc-upgrader reference doc)))))))
 
-(defn snapshot-handler [collection? c snapshot]
+(defn snapshot-handler [collection? c reference snapshot]
   (async/put!
    c
    (if collection?
-     (let [a (atom [])]
-       (.forEach snapshot #(->> % doc-upgrader (swap! a conj)))
+     (let [a (atom (with-meta [] {:reference reference}))]
+       (.forEach snapshot #(->> % (doc-upgrader reference) (swap! a conj)))
        @a)
-     (doc-upgrader snapshot))))
+     (doc-upgrader reference snapshot))))
 
 (defn snapshot-listen-options->js [options]
   (let [{:keys [include-metadata-changes]} options]
@@ -313,7 +315,7 @@
          {:keys [ref query]} (shared-db fb reference nil)
          c (async/chan)
          collection? (some? query)
-         handler (partial snapshot-handler collection? c)
+         handler (partial snapshot-handler collection? c reference)
          unsubscribe (.onSnapshot (if collection?
                                     (filter-by-query ref query)
                                     ref)

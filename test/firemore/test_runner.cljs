@@ -26,7 +26,8 @@
    'firemore.core-test
    'firemore.firebase-test
    'firemore.firestore-test
-   'firemore.hydrator-test))
+   'firemore.hydrator-test
+   ))
 
 (defn ^:export is_successful []
   @successful)
