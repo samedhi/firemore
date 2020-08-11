@@ -298,6 +298,37 @@
        (unsubscribe)
        (done)))))
 
+(defn check-cities-reference [city]
+  (let [{:keys [id reference]} (meta city)
+        expected-reference [:cities id]]
+    (t/testing city
+      (t/is (= expected-reference reference)))))
+
+(t/deftest check-for-reference-in-metadata
+  (t/async
+   done
+   (async/go
+     (let [reference [:cities "SF"]
+           sf (async/<! (sut/get-db reference))]
+       (t/testing "Get San Francisco should contain a reference."
+         (t/is (= reference (-> sf meta :reference)))))
+     (let [reference [:cities "SF"]
+           {:keys [unsubscribe c]} (sut/listen reference)
+           sf (async/<! c)]
+       (t/testing "Listen to San Francisco should contain a reference."
+         (t/is (= reference (-> sf meta :reference))))
+       (unsubscribe))
+     (let [reference [:cities {}]
+           {:keys [unsubscribe c]} (sut/listen reference)
+           cities (async/<! c)]
+       (t/testing "Query result should contain a reference"
+         (t/is (= reference (-> cities meta :reference))))
+       (t/testing "The city should contain a reference key for"
+         (doseq [city cities]
+           (check-cities-reference city)))
+       (unsubscribe))
+     (done))))
+
 (t/deftest all-california-test
   (t/async
    done
