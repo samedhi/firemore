@@ -10,23 +10,8 @@
 
 (enable-console-print!)
 
-(def PATH->LISTEN_MAP (atom {}))
-
-(defn subscribe-path
-  ([path->listen-map reference] (subscribe-path path->listen-map reference reference))
-  ([path->listen-map reference path]
-   (let [listen-map (firestore/listen reference)]
-     (assoc path->listen-map path listen-map))))
-
-(defn unsubscribe-path [path->listen-map path]
-  ;; This section shuts down the state machine feeding the value at `path` by
-  ;; calling unsubscribe; this is "side effect" code.
-  (-> path
-      path->listen-map
-      :unsubscribe
-      (apply []))
-  ;; Remove the path from the path->listen-map.
-  (dissoc path->listen-map path))
+;; TODO: Rather than being map of paths, be a map of atoms of paths.
+(def ATM->PATH->LISTEN_MAP (atom {}))
 
 (defn nil-when-empty? [coll]
   (when-not (empty? coll)
@@ -47,11 +32,25 @@
 
 #_(dissoc-in {:a 1 :b {:c 2 :d {:f 3}}} [:b :d :f])
 
+(defn subscribe-path [atm->path->listen-map atm reference path]
+  ;; TODO: get angry if path already registered
+  (let [listen-map (firestore/listen reference)]
+    (assoc-in atm->path->listen-map [atm path] listen-map)))
+
+(defn unsubscribe-path [atm->path->listen-map atm path]
+  ;; This section shuts down the state machine feeding the value at `path` by
+  ;; calling unsubscribe; this is "side effect" code.
+  (-> (get-in atm->path->listen-map [atm path])
+      :unsubscribe
+      (apply []))
+  ;; Remove the path from the path->listen-map.
+  (dissoc-in atm->path->listen-map [atm path]))
+
 (defn watch!
   ([atm reference] (watch! atm reference reference))
   ([atm reference path]
-   (let [{:keys [c]} (-> (swap! PATH->LISTEN_MAP subscribe-path reference path)
-                         (get path))]
+   (let [{:keys [c]} (-> (swap! ATM->PATH->LISTEN_MAP subscribe-path atm reference path)
+                         (get-in [atm path]))]
      (swap! atm assoc-in path config/LOADING)
      (go-loop []
        (when-let [v (async/<! c)]
@@ -59,5 +58,5 @@
          (recur))))))
 
 (defn unwatch! [atm path]
-  (swap! PATH->LISTEN_MAP unsubscribe-path path)
+  (swap! ATM->PATH->LISTEN_MAP unsubscribe-path atm path)
   (swap! atm dissoc-in path))
