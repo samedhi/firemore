@@ -3,72 +3,61 @@
    [cljs.core.async :as async]
    [clojure.data :as data]
    [clojure.set :as set]
+   [firemore.config :as config]
    [firemore.firestore :as firestore])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
 (enable-console-print!)
 
-(def input-path (atom [:firemore]))
+(def PATH->LISTEN_MAP (atom {}))
 
-(def output-path (atom [:firestore]))
+(defn subscribe-path
+  ([path->listen-map reference] (subscribe-path path->listen-map reference reference))
+  ([path->listen-map reference path]
+   (let [listen-map (firestore/listen reference)]
+     (assoc path->listen-map path listen-map))))
 
-(defn prepend [x y]
-  (apply conj x y))
+(defn unsubscribe-path [path->listen-map path]
+  ;; This section shuts down the state machine feeding the value at `path` by
+  ;; calling unsubscribe; this is "side effect" code.
+  (-> path
+      path->listen-map
+      :unsubscribe
+      (apply []))
+  ;; Remove the path from the path->listen-map.
+  (dissoc path->listen-map path))
 
-;; Note: It is with a heavy heart that I add this mutable concept into this function.
-;; But the alternative is that I either close over the input and output path to
-;; create all the needed functions OR pass them as options to all needed functions.
-;; Both solutions seem like overkill as I doubt that you are going to have more
-;; than one (input, output) tuple per cljs application. Revisit this if it turns out
-;; your assumptions are incorrect.
-(defn prepend-input-path [path]
-  (prepend @input-path path))
+(defn nil-when-empty? [coll]
+  (when-not (empty? coll)
+    coll))
 
-(defn prepend-output-path [path]
-  (prepend @output-path path))
+(defn dissoc-in-internal [m ks]
+  (let [[k & ks-rest] ks]
+    (nil-when-empty?
+     (case (count ks)
+       0 (throw (ex-info "Cannot dissoc from empty ks" m))
+       1 (dissoc m k)
+       (if-let [new-v (dissoc-in-internal (get m k) ks-rest)]
+         (assoc m k new-v)
+         (dissoc m k))))))
 
-(defn handle-removed [m path]
-  (when-let [reference (get-in m (prepend-input-path path))]
-    (-> reference meta :unsubscribe (apply []))))
+(defn dissoc-in [m ks]
+  (or (dissoc-in-internal m ks) {}))
 
-(defn subtract [m path]
-  (let [input-path (prepend-input-path path)
-        output-path (prepend-output-path path)]
-    (handle-removed m path)
-    (-> m
-        (update-in (pop input-path)  dissoc (peek input-path))
-        (update-in (pop output-path) dissoc (peek output-path)))))
+#_(dissoc-in {:a 1 :b {:c 2 :d {:f 3}}} [:b :d :f])
 
+(defn watch!
+  ([atm reference] (watch! atm reference reference))
+  ([atm reference path]
+   (let [{:keys [c]} (-> (swap! PATH->LISTEN_MAP subscribe-path reference path)
+                         (get path))]
+     (swap! atm assoc-in path config/LOADING)
+     (go-loop []
+       (when-let [v (async/<! c)]
+         (swap! atm assoc-in path v)
+         (recur))))))
 
-(defn query? [reference]
-  (or (-> reference peek map?)
-      (-> reference count odd?)))
-
-;; Note: Ugh. Passing a atm to a function that is going to be called in swap!....
-;; The issue is that I need to have the atom so I can build the state machine. I
-;; also considered putting the atom in a globally reachable place (config) or
-;; having state machine be a side effect in a watch function attached to the
-;; atom. Not good. Bad code. What better?
-(defn handle-added [m atm path reference]
-  (let [{:keys [c unsubscribe] :as m2} (firestore/listen reference)
-        output-path (prepend-output-path path)]
-    (go-loop []
-      (when-let [v (async/<! c)]
-        (swap! atm assoc-in output-path v)
-        (recur)))
-    (with-meta reference m2)))
-
-(defn add [m atm path reference]
-  (let [input-path (prepend-input-path path)
-        output-path (prepend-output-path path)]
-    (-> m
-        (subtract path)
-        (assoc-in input-path (handle-added m atm path reference))
-        (assoc-in output-path (if (query? reference) [] {})))))
-
-(defn subtract! [atm path]
-  (swap! atm subtract path))
-
-(defn add! [atm path reference]
-  (swap! atm add atm path reference))
+(defn unwatch! [atm path]
+  (swap! PATH->LISTEN_MAP unsubscribe-path path)
+  (swap! atm dissoc-in path))

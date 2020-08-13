@@ -192,7 +192,7 @@
 
 ;; watchers
 
-(defn add!
+(defn watch!
   "Sync the current value of `reference` at `path` within the `atm`
 
   atm - A clojure atom.
@@ -201,13 +201,13 @@
 
   Note that the the {path reference} will show up under the :firemore key, and the
   {path reference-value} will show up under the :firemore key in `atm`."
-  [atm path reference]
-  (hydrator/add! atm path reference))
+  [atm reference path]
+  (hydrator/watch! atm path reference))
 
-(defn subtract!
+(defn unwatch!
   "Remove the `path` from the `atm`"
   [atm path]
-  (hydrator/subtract! atm path))
+  (hydrator/unwatch! atm path))
 
 (defn watch-user
   "Add functionality to atom `atm` so that `:user` reflects latest value from `get-user`"

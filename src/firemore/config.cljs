@@ -8,6 +8,8 @@
 
 (def NO_DOCUMENT :firemore/no-document)
 
+(def LOADING :firemore/loading)
+
 (def required-config
   ["FIREBASE_API_KEY"
    "FIREBASE_PROJECT_ID"])
