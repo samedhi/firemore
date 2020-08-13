@@ -33,7 +33,10 @@
 #_(dissoc-in {:a 1 :b {:c 2 :d {:f 3}}} [:b :d :f])
 
 (defn subscribe-path [atm->path->listen-map atm reference path]
-  ;; TODO: get angry if path already registered
+  (when (and (contains? atm->path->listen-map atm)
+             (contains? (get atm->path->listen-map atm) path))
+    (throw
+     (ex-info "atm->path is already registered" {:atm atm :path path})))
   (let [listen-map (firestore/listen reference)]
     (assoc-in atm->path->listen-map [atm path] listen-map)))
 
