@@ -2,14 +2,11 @@
   (:require
    [cljs.core.async :as async]
    [firemore.firebase :as firebase]
-   [firemore.auth-ui :as auth-ui]
    [firemore.config :as config])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
 (enable-console-print!)
-
-(def FB firebase/FB)
 
 (def signing-in? (atom false))
 
@@ -22,17 +19,15 @@
      {:anonymous? (.-isAnonymous js-user)
       :uid        (.-uid js-user)})))
 
-(-> FB firebase/auth (.onAuthStateChanged user-change-handler))
-
 (defn login-anonymously!
-  ([] (login-anonymously! FB))
+  ([] (login-anonymously! @firebase/FB))
   ([fb]
    (when-not @signing-in?
      (.signInAnonymously (firebase/auth fb))
      (reset! signing-in? true))))
 
 (defn logout!
-  ([] (logout! FB))
+  ([] (logout! @firebase/FB))
   ([fb] (.signOut (firebase/auth fb))))
 
 (defn uid []
@@ -46,26 +41,11 @@
           (recur))))
     c))
 
-(defonce init-auth-ui
-  (when (:enabled config/AUTH_CONFIG)
-    (let [auth (firebase/auth firebase/FB)
-          auth-ui (js/firebaseui.auth.AuthUI. auth)
-          {:keys [container-selector]} config/AUTH_CONFIG
-          config (-> config/AUTH_CONFIG
-                     (select-keys auth-ui/config-keys)
-                     clj->js)]
-      (.start auth-ui container-selector config)
-      true)))
-
-(defn set-style-on-auth-ui [value]
-  (-> config/AUTH_CONFIG
-      :container-selector
-      (js/document.querySelector)
-      (.. -style)
-      (set! value)))
-
-(defn show-auth-ui []
-  (set-style-on-auth-ui "display: block"))
-
-(defn hide-auth-ui []
-  (set-style-on-auth-ui "display: none"))
+;; Initialize the authentication when firebase/FB gets a value
+(add-watch
+ firebase/FB
+ :register-auth-with-firebase-application
+ (fn [_ _ _ new]
+   (-> new
+       firebase/auth
+       (.onAuthStateChanged user-change-handler))))
