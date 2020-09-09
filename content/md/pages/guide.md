@@ -112,6 +112,11 @@ Ok, let's get things rolling. The firemore library is going to allow us to read,
 </code>
 </pre>
 
+In your own application, you would initialize *your* firestore database. However, it is fine for now to use the default firestore database by specifying no arguments to ``initialize``.
+```language-klipse
+(firemore/initialize)
+```
+
 I was thinking about [Star Wars](https://www.starwars.com/) this morning, and I couldn't remember. Does Luke Skywalker have Force powers? Let's check!
 
 *Note: The following data exist at the `[:characters "luke"]` reference*
