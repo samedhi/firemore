@@ -216,3 +216,5 @@
 (defn unwatch-user
   "Removes functionality on `atm` that may have been added by `watch-user`"
   [atm])
+
+(def initialize firebase/initialize)

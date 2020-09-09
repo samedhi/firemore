@@ -8,8 +8,6 @@
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
-(def FB firebase/FB)
-
 (def server-timestamp (.serverTimestamp js/firebase.firestore.FieldValue))
 
 (def active-transactions (atom []))
@@ -39,7 +37,7 @@
 
 (defn ref
   "Convert a firemore reference to a firebase reference"
-  ([path] (ref FB path))
+  ([path] (ref @firebase/FB path))
   ([fb path]
    (loop [[p & ps] path
           collection? true
@@ -181,11 +179,11 @@
             (resolve v))
           (finally-fx c v)))))))
 
-(def default-options
-  {:fb FB})
+(defn default-options []
+  {:fb @firebase/FB})
 
 (defn merge-default-options [options]
-  (merge default-options options))
+  (merge (default-options) options))
 
 (defn set-db!
   ([reference value] (set-db! reference value nil))
@@ -353,7 +351,7 @@
      c)))
 
 (defn create-batch
-  ([] (create-batch FB))
+  ([] (create-batch @firebase/FB))
   ([fb]
    (-> fb firebase/db (.batch))))
 
