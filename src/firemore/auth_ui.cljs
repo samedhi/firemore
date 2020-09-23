@@ -55,7 +55,7 @@
   (set-style-on-auth-ui "display: none"))
 
 (defn initialize-auth-ui [config-overrides]
-  (js/alert "Using the auth-ui")
+  (js/console.log "Using the auth-ui")
   (swap! config merge config-overrides)
   (.start (js/firebaseui.auth.AuthUI. (firebase/auth @firebase/FB))
           (:container-selector @config)
