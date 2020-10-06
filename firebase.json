@@ -10,5 +10,14 @@
       "**/.*",
       "**/node_modules/**"
     ]
+  },
+  "emulators": {
+    "firestore": {
+      "host": "localhost",
+      "port": "8090"
+    },
+    "ui": {
+      "enabled": true
+    }
   }
 }

@@ -22,5 +22,7 @@ pom.xml.asc
 /node_modules
 /blog
 /.DS_Store
-/.firebase*
 /.rebel_readline_history
+/firebase-debug.log
+/firestore-debug.log
+/ui-debug.log
