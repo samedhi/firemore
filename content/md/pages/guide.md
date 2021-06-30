@@ -28,7 +28,6 @@ Firemore is a [clojurescript](https://clojurescript.org/) library for interactin
 1. Automatic conversions between clojure maps and Firestore [Documents](https://firebase.google.com/docs/firestore/data-model#documents).
 1. A [channel](https://github.com/clojure/core.async) based API for reading, writing, and observing Firestore Documents.
 1. A succinct syntax for doing [queries](https://firebase.google.com/docs/firestore/query-data/queries) upon Firestore Documents.
-1. A binding between the Firestore Database and a clojurescript atom (great for [om](https://github.com/omcljs/om) / [re-frame](https://github.com/Day8/re-frame) / [reagent](https://reagent-project.github.io/)).
 1. A drop in [Authentication Solution](https://firebase.google.com/docs/auth/web/firebaseui) for managing your users.
 
 # Getting Started
@@ -447,127 +446,6 @@ The `:order` values are expanded into 2 element vectors of `[<property> "asc"]` 
 [:cities {:where [:population "<" 1000000]
           :order [:population ["state" "desc"]]
           :limit 2}]
-```
-
-## Using Local State Atom
-
-Let's say you want a ordered list of the best of the [Three Stooges](https://en.wikipedia.org/wiki/The_Three_Stooges)? You want a per stooge button that lets you vote for each stooge, as well as a ordered list of stooges from highest to lowest vote. The HTML below is printed and then rendered immediately following.
-
-```markdown
-### Best Stooge Official Ranking
-
-<span id="ordered-stooges" style="font-size: 2em">Loading...</span>
-
-<table>
- <tbody class="stooge-table">
-  <tr>
-   <th> Vote for Moe </th>
-   <th> <button id="moe-button" style="margin: 0.5em 1em">Vote</button> </th>
-   <th> <span id="moe-votes">-1</span> </th>
-  </tr>
-  <tr>
-   <th> Vote for Larry </th>
-   <th> <button id="larry-button" style="margin: 0.5em 1em">Vote</button> </th>
-   <th> <span id="larry-votes">-1</span> </th>
-  </tr>
-  <tr>
-   <th> Vote for Curly </th>
-   <th> <button id="curly-button" style="margin: 0.5em 1em">Vote</button> </th>
-   <th> <span id="curly-votes">-1</span> </th>
-  </tr>
- </tbody>
-</table>
-```
-
-### Best Stooge Official Ranking
-
-<span id="ordered-stooges" style="font-size: 2em">Loading...</span>
-
-<table>
- <tbody class="stooge-table">
-  <tr>
-   <th> Vote for Moe </th>
-   <th> <button id="moe-button" style="margin: 0.5em 1em">Vote</button> </th>
-   <th> <span id="moe-votes">-1</span> </th>
-  </tr>
-  <tr>
-   <th> Vote for Larry </th>
-   <th> <button id="larry-button" style="margin: 0.5em 1em">Vote</button> </th>
-   <th> <span id="larry-votes">-1</span> </th>
-  </tr>
-  <tr>
-   <th> Vote for Curly </th>
-   <th> <button id="curly-button" style="margin: 0.5em 1em">Vote</button> </th>
-   <th> <span id="curly-votes">-1</span> </th>
-  </tr>
- </tbody>
-</table>
-
-With our current knowledge, we will need at least 4 observers to the Firestore database. One observer for each stooge (3), plus one observer for the list of stooges sorted by the number of votes they have received. We will in addition need to create a state machine that takes the result from each observer and places it within the `<stooge>-votes` element, as well as creating a closure to save the value so that we can send the incremented value to the server upon button clicks. That is a good amount of work.
-
-Or we can just do the following. 
-
-```language-klipse
-;; The app that holds our state
-(def app (atom {}))
-
-(defn set-by-id! [id v]
-  (set! (.-textContent (js/document.getElementById id)) v))
-
-;; writes new value to our 4 separate <span>'s
-(defn watcher [_ _ _ n]
-  (set-by-id! "moe-votes" (get-in n [:firestore "moe" :votes]))
-  (set-by-id! "larry-votes" (get-in n [:firestore "larry" :votes]))
-  (set-by-id! "curly-votes" (get-in n [:firestore "curly" :votes]))
-  (set-by-id! "ordered-stooges" 
-    (clojure.string/join " > " 
-      (map #(-> % meta :id) (get-in n [:firestore :ordered-stooges])))))
-
-;; on every change to app, call watcher with the newest value of app
-(add-watch app :update-stooge-values watcher)
-
-(go
- (let [user-id (async/<! (firemore/uid))]
-  (doseq [[stooge i] (map vector ["moe" "larry" "curly"] (range))]
-   ;; Give every stooge a initial vote count
-   (async/<! (firemore/write! [:users user-id :stooges stooge] {:votes i}))
-   ;; Register a event click handler for every vote button
-   (set! (.-onclick (js/document.getElementById (str stooge "-button")))
-         (fn [event] 
-          (.preventDefault event)
-          (let [votes (get-in @app [:firestore stooge :votes] 0)]
-           (firemore/write! [:users user-id :stooges stooge] {:votes (inc votes)})))))
-           
-  ;; bind keys in the app to specific references in firestore
-  (firemore/add! app ["moe"]   [:users user-id :stooges "moe"])
-  (firemore/add! app ["larry"] [:users user-id :stooges "larry"])
-  (firemore/add! app ["curly"] [:users user-id :stooges "curly"])
-  (firemore/add! app [:ordered-stooges] [:users user-id :stooges {:order [[":votes" "desc"]]}])))
-
-:done
-```
-
-Using `firemore/add!`, we can cause an atom to be updated with the most recent value at a `reference`. `firemore/subtract!` can be used to undo `firemore/add!`. This is very useful for single page apps (SPA) that often rely on having a single atom that drive the application. See [om](https://github.com/omcljs/om) / [re-frame](https://github.com/Day8/re-frame) / [reagent](https://reagent-project.github.io/) for examples of frameworks for building SPAs.
-
-```no-highlight
-Usage:
-(add atm path reference)
-
-Sync the current value of `reference` at `path` within the `atm`
-
-atm - A clojure atom.
-path - a vector location within the `atm` where the Firestore `reference` will be written.
-reference - a reference to a location in Firestore.
-
-Note that the the {path reference} will show up under the :firemore key, and the
-{path reference-value} will show up under the :firemore key in `atm`.
-```
-
-```no-highlight
-Usage:
-(subtract! atm path)
-
-Remove the `path` from the `atm`
 ```
 
 ## Authentication
