@@ -48,9 +48,9 @@ Pull Request are always welcome and appreciated. If you want to discuss firemore
 
 # Credits
 
-[Stephen Cagle](https://samedhi.github.io/) is a Senior Software Engineer at [Dividend Finance](https://www.dividendfinance.com/) in San Francisco, CA. He is the original (currently only, but always accepting PRs!) creator/maintainer of firemore.
+[Stephen Cagle](https://samedhi.github.io/) is a Senior Software Engineer at [Sam's Club](https://www.samsclub.com/) in San Bruno, CA. He is the original (currently only, but always accepting PRs!) creator/maintainer of firemore.
 [@github](https://github.com/samedhi)
-[@linkedin](https://www.linkedin.com/in/stephen-cagle-92b895102/)
+[@linkedin](https://www.linkedin.com/in/stephen-cagle/)
 
 ![Man (Stephen Cagle) holding beer & small dog (Chihuahua)](content/img/stephen_and_nugget_1200.jpg)
 
@@ -58,4 +58,4 @@ Pull Request are always welcome and appreciated. If you want to discuss firemore
 
 MIT License
 
-Copyright (c) 2019 Stephen Cagle
+Copyright (c) 2021 Stephen Cagle
