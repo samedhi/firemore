@@ -10,7 +10,7 @@ jobs:
       run: lein cljsbuild once test
     - name: Serve the content
       working-directory: ./resources/public
-      run: python -m SimpleHTTPServer 3449 &
+      run: python3 -m http.server 3449 &
     - name: Install Puppeteer
       run: npm i puppeteer
     - name: Wait for server
