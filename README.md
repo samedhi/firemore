@@ -30,9 +30,6 @@ To use firemore in an existing project, add this to your dependencies in project
 
 # Usage
 
-## Interactive Examples
-[firemore.org](https://firemore.org) contains interactive code demonstrating most features; much thanks to [Klipse](https://github.com/viebel/klipse) for making this possible.
-
 ## API
 [API for most recent version](https://firemore.org/pages/api/)
 
